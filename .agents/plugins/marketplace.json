@@ -1,0 +1,5 @@
+{
+  "name": "codex-prompty",
+  "interface": {"displayName": "Codex-Prompty"},
+  "plugins": [{"name": "nextprompt", "source": {"source": "local", "path": "./"}}]
+}
