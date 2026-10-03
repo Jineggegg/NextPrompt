@@ -2,7 +2,7 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 **Codex-Prompty** is the repository/package name; **NextPrompt** is the plugin and skill name.
-Version: **0.1.0**. Runtime: Python 3.10+, standard library only.
+Version: **0.1.1**. Runtime: Python 3.10+, standard library only.
 
 ```text
 Codex:
@@ -53,15 +53,36 @@ V1 does not patch Codex or install fake buttons.
 
 ## Installation
 
-Ensure `codex --version` works and **`python --version` reports Python 3.10 or newer**.
-The hook uses `python` on PATH on every platform. On Linux installations with only
-`python3`, make a user-managed Python command available or change the hook command
-to `python3` before installation. NextPrompt never installs system software.
+The hook uses `python` on PATH and requires Python 3.10 or newer. The runtime and
+Hook never install software. On Windows, the explicitly invoked PowerShell installer
+checks the requirement and, only when Python is missing or too old, uses `winget` to
+install Python 3.12 for the current user. It does not request administrator access.
+On Linux installations with only `python3`, make a user-managed `python` command
+available or change the hook command to `python3` before installation.
 
 For a private checkout at **Jineggegg/Codex-Prompty**, authenticate as its owner
 before cloning. The commands below require that the private repository has been
 created and populated. The plugin bundles all six skills; no package publication
 or pip installation is needed.
+
+Windows quick install:
+
+```powershell
+gh auth login
+gh repo clone Jineggegg/Codex-Prompty
+Set-Location Codex-Prompty
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+```
+
+The script verifies `codex`, installs Python 3.12 through the official `winget`
+source when required, refreshes the current process PATH, registers the marketplace,
+installs the plugin and runs Doctor. Add `-Probe` to perform a synthetic inference
+test; it may consume model quota. The execution-policy override applies only to this
+PowerShell process and does not change the user's system policy. If `winget` is
+unavailable, the script stops with instructions instead of downloading an unverified
+installer or requesting elevation.
+
+Manual or non-Windows install:
 
 ```sh
 gh auth login
@@ -85,7 +106,7 @@ codex plugin marketplace add /absolute/path/to/Codex-Prompty
 codex plugin add nextprompt@codex-prompty
 ```
 
-These exact CLI commands were tested in an isolated Codex home. No pip installation
+These CLI commands were tested in an isolated Codex home. No pip installation
 is needed to use the plugin. Restart Codex, then open **`/hooks` and review/trust the
 NextPrompt hook**. Installing a plugin does not automatically trust its executable
 hooks. Do not bypass trust review for normal use.
@@ -360,7 +381,8 @@ quota failures are summarized as safe categories, without the original CLI error
   yourself. In headless environments display only is the dependable default.
 - Plugin edits not reflected: remove/add the installed plugin to refresh its cached
   bundle, then review changed hook trust again.
-- `python` missing: verify the interpreter command in `hooks/hooks.json` before install.
+- `python` missing on Windows: rerun `scripts/install.ps1`; on other platforms,
+  verify the interpreter command in `hooks/hooks.json` before installation.
 - Malformed config: repair/delete only NextPrompt's own config, then run setup.
 
 ## Disable, uninstall and delete local config

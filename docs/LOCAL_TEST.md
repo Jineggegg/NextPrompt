@@ -3,10 +3,26 @@
 GitHub 交付目标是 `Jineggegg/Codex-Prompty` 私有仓库。仓库创建并推送完成后，
 使用仓库所有者的 GitHub 账号克隆。运行环境需要 Codex CLI 0.159.0+，
 并且 `codex exec --help` 必须具有
-`--ignore-user-config`、`--ignore-rules`、`--ephemeral`、`--disable`。需要 PATH
-中的 `python` 为 Python 3.10+；不要把凭据写进 Git URL、脚本或项目文件。
+`--ignore-user-config`、`--ignore-rules`、`--ephemeral`、`--disable`。运行时需要
+PATH 中的 `python` 为 Python 3.10+；不要把凭据写进 Git URL、脚本或项目文件。
 
-## 1. 克隆并验证真实模型
+## 1. Windows 一键安装
+
+```powershell
+gh auth login
+gh repo clone Jineggegg/Codex-Prompty
+Set-Location Codex-Prompty
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
+```
+
+脚本仅在用户主动运行时检查 Python。缺少 Python 3.10+ 时，它通过官方
+`winget` 源为当前用户静默安装 Python 3.12，刷新当前 PowerShell 的 PATH，
+随后注册 marketplace、安装插件并运行 Doctor。它不申请管理员权限，Hook
+和日常运行也不会下载软件。缺少 `winget` 时脚本会停止，不会改用未经验证的
+下载地址。`-ExecutionPolicy Bypass` 仅对此次 PowerShell 进程生效，不会修改
+系统策略。可选 `-Probe` 会发送固定模拟对话并可能消耗模型额度。
+
+## 2. 手动安装并验证真实模型
 
 ```sh
 gh auth login
@@ -27,7 +43,7 @@ Doctor。`--probe` 只发送固定的模拟对话，可能消耗自己的模型�
 开发环境的真实请求返回 401，所以尚未证明真实账户额度或模型质量。
 这个问题必须通过本地 Codex 的正常认证解决，插件不读取或复制 token。
 
-## 2. 安装插件和 skills
+## 3. 安装插件和 skills
 
 ```sh
 codex plugin marketplace add .
@@ -43,7 +59,7 @@ skill 选择器可能将名称显示为 `nextprompt:nextprompt-setup` 等带命�
 安装无需 pip。不要为普通使用绕过 hook 信任检查。插件使用官方
 `.codex-plugin/plugin.json`；当前验证版本的 portable 根 manifest 没有加载 hooks。
 
-## 3. 检查输出与复制
+## 4. 检查输出与复制
 
 在自己的临时项目中完成一个简单任务，例如修复一个小问题，并要求只运行
 相关测试。回答结束后应出现一条简短的 `Next prompt:` 建议。模型输出太泛化、
@@ -62,7 +78,7 @@ Wayland 使用 `wl-copy`，X11 使用 `xclip` 或 `xsel`。当前开发环境没
 运行 `$nextprompt-status` 查看当前配置与 backend；`$nextprompt-doctor` 可排查。
 关闭 `$nextprompt-disable` 后不应再读取会话、请求模型或操作剪切板。
 
-## 4. 可选：运行测试
+## 5. 可选：运行测试
 
 ```sh
 python -m pip install -e ".[dev]"
@@ -80,7 +96,7 @@ NEXTPROMPT_RUN_CLI_INTEGRATION=1 python -m pytest -q
 集成测试使用独立的临时 Codex home，不使用真实 token 或远程模型。
 真实推理和剪切板验证结果可由仓库所有者记录到 `docs/VALIDATION.md`。
 
-## 5. 更新或卸载
+## 6. 更新或卸载
 
 `git pull` 后，移除再安装插件以刷新缓存，并重新检查 hook 信任。
 

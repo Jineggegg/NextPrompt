@@ -1,4 +1,33 @@
-# v0.1.0 validation — 2026-10-03
+# Validation
+
+## v0.1.1 — 2026-10-03, Windows
+
+**Status: PASS for the Windows installer and authenticated inference probe.**
+
+```text
+Python:                    3.12.10
+Codex CLI:                 0.160.0
+PowerShell installer:      PASS
+Idempotent reinstall:      PASS
+Installed plugin:          nextprompt@codex-prompty 0.1.1, enabled
+Doctor inference probe:    PASS — one short suggestion
+PowerShell syntax:         PASS
+Skill validation:          PASS — all six skills
+python -m ruff check .     PASS
+python -m ruff format --check .
+                           PASS — 41 files already formatted
+python -m pytest -q        PASS — 210 passed, 6 skipped in 2.40s
+git diff --check           PASS
+```
+
+This Windows session initially had no working `python` command. Python 3.12.10 was
+installed for the current user through the official `winget` package and its verified
+installer, and the refreshed user PATH resolved the interpreter. The final
+`scripts/install.ps1` then completed twice, including an opt-in `-Probe` run. It
+preserved the Codex desktop process PATH, refreshed the plugin cache to 0.1.1 and did
+not request elevation. Hook trust and clipboard consent remain explicit user actions.
+
+## v0.1.0 — 2026-10-03, Linux
 
 **Status: PARTIAL.** Implementation and local CLI integration passed. Authenticated
 remote inference/quota and real desktop clipboard round trips remain unverified.

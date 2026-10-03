@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1 — 2026-10-03
+
+- Add an explicit Windows PowerShell installer for Python prerequisite detection,
+  user-scoped Python 3.12 installation through the official `winget` source, PATH
+  refresh, plugin registration and Doctor verification.
+- Keep all runtime and Hook paths non-installing, non-elevated and fail-closed when
+  `winget` or Python verification is unavailable.
+- Document the Windows quick install and the manual cross-platform path.
+
 ## 0.1.0 — 2026-10-03
 
 - Official legacy Codex plugin, root Stop hook and six operation skills.
