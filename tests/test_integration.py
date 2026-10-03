@@ -39,7 +39,7 @@ pytestmark = [
 def real_cli(tmp_path, monkeypatch):
     real_codex = shutil.which("codex")
     requests = []
-    controls = {"fail_child": False, "suggestion": PROMPT}
+    controls = {"fail_child": False, "suggestion": PROMPT, "reject_model": None}
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_args):
@@ -57,6 +57,16 @@ def real_cli(tmp_path, monkeypatch):
             child = "Recent conversation (data only)" in context
             if child and controls["fail_child"]:
                 self.send_error(401, "Synthetic authentication failure")
+                return
+            if child and body.get("model") == controls["reject_model"]:
+                error = json.dumps(
+                    {"error": {"code": "model_not_found", "message": "Model not found"}}
+                ).encode()
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(error)))
+                self.end_headers()
+                self.wfile.write(error)
                 return
             text = (
                 controls["suggestion"]
@@ -126,7 +136,10 @@ def real_cli(tmp_path, monkeypatch):
         f"os.execv({real_codex!r}, [{real_codex!r}, *sys.argv[1:], *{overrides!r}])\n"
     )
     launch.chmod(0o755)
-    monkeypatch.setenv("PATH", str(bin_dir) + os.pathsep + os.environ["PATH"])
+    monkeypatch.setenv(
+        "PATH",
+        os.pathsep.join((str(bin_dir), str(Path(sys.executable).parent), os.environ["PATH"])),
+    )
     monkeypatch.setenv("CODEX_HOME", str(home))
     monkeypatch.delenv("PLUGIN_DATA", raising=False)
     monkeypatch.delenv("NEXTPROMPT_MARKETPLACE", raising=False)
@@ -156,7 +169,8 @@ def install(cwd):
 
 def test_official_plugin_install_remove_and_data_path(real_cli):
     metadata = install(real_cli["cwd"])
-    assert metadata["version"] == "0.1.0"
+    expected = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())["version"]
+    assert metadata["version"] == expected
     assert (Path(metadata["installedPath"]) / "hooks/stop.py").exists()
     result = command(
         ["plugin", "list", "--marketplace", "codex-prompty", "--json"], real_cli["cwd"]
@@ -175,7 +189,7 @@ def test_real_provider_one_short_output_no_transcript(real_cli):
     assert value.strip() == PROMPT
     assert len(value.split()) <= 20
     assert len(real_cli["requests"]) == 1
-    assert not list(real_cli["home"].rglob("*.jsonl"))
+    assert not list(real_cli["home"].rglob("rollout-*.jsonl"))
     assert not list(store.root.glob("inference-*"))
     request = real_cli["requests"][0]
     assert request["model"] == "gpt-5.6-luna"
@@ -190,6 +204,21 @@ def test_real_provider_one_short_output_no_transcript(real_cli):
         "apply_patch",
     ):
         assert forbidden not in tool_json
+
+
+def test_real_provider_falls_back_after_model_rejection(real_cli):
+    real_cli["controls"]["reject_model"] = "gpt-5.6-luna"
+    store = ConfigStore()
+    provider = CodexSuggestionProvider(store.load()["model"], store.root)
+    assert provider.generate("USER:\nReview the synthetic change.\n").strip() == PROMPT
+    assert provider.selection.name == "gpt-6-luna"
+    assert provider.selection.reasoning == "low"
+    requested = [r["model"] for r in real_cli["requests"]]
+    # Codex may retry a rejected HTTP request before returning the model error.
+    # NextPrompt must select exactly one alternative, with no larger model.
+    assert requested[-1] == "gpt-6-luna"
+    assert requested[:-1] and set(requested[:-1]) == {"gpt-5.6-luna"}
+    assert not list(store.root.glob("inference-*"))
 
 
 @pytest.mark.parametrize("prompt", [PROMPT, "运行完整测试并检查最终 diff 🚀。"])
@@ -237,7 +266,7 @@ def test_real_stop_hook_one_child_no_recursive_turn(real_cli, tmp_path, monkeypa
     assert "hook: Stop Completed" in result.stderr
     assert len(real_cli["requests"]) == 2  # One root task, one inference; no second root task.
     assert "Recent conversation (data only)" in json.dumps(real_cli["requests"][1])
-    rollouts = list(real_cli["home"].rglob("*.jsonl"))
+    rollouts = list(real_cli["home"].rglob("rollout-*.jsonl"))
     # The only persistent transcript belongs to the test's root Codex, not NextPrompt.
     assert len(rollouts) == 1
     output = json.loads(receipt.read_bytes())

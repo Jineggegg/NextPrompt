@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2 — 2026-10-03
+
+- Retry explicit model-unavailable errors with the next catalog-listed lightweight
+  model at `low`, with one shared deadline and no authentication/quota/transport hopping.
+- Default new configurations to `low`; preserve existing explicit reasoning choices.
+- Make suggestions concise user-voice continuations with explicit approval boundaries.
+- Test Windows prerequisite paths without real downloads, including broken App
+  Execution Aliases, and make their version probes safely fall back to installation.
+- Extend real CLI/local-service integration coverage to runtime model fallback.
+
 ## 0.1.1 — 2026-10-03
 
 - Add an explicit Windows PowerShell installer for Python prerequisite detection,

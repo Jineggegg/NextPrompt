@@ -25,7 +25,13 @@ function Get-CompatiblePython {
         return $null
     }
 
-    $versionText = & $command.Source -c "import sys; print('.'.join(map(str, sys.version_info[:3])))" 2>$null
+    try {
+        $versionText = & $command.Source -c "import sys; print('.'.join(map(str, sys.version_info[:3])))" 2>$null
+    }
+    catch {
+        # Windows App Execution Aliases can throw instead of returning a version.
+        return $null
+    }
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($versionText)) {
         return $null
     }

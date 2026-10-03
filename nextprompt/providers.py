@@ -61,7 +61,23 @@ def failure_category(stderr: bytes) -> str:
         )
     ):
         return "quota"
-    return "model"
+    if any(
+        marker in text
+        for marker in (
+            "model not found",
+            "model_not_found",
+            "model does not exist",
+            "model is not available",
+            "model is unavailable",
+            "model is not supported",
+            "model is not permitted",
+            "model is not allowed",
+            "not supported when using codex",
+            "you do not have access to this model",
+        )
+    ):
+        return "model"
+    return "unavailable"
 
 
 @dataclass(frozen=True)
@@ -77,24 +93,37 @@ class SuggestionProvider(ABC):
 
 
 def choose_model(
-    models: list[dict[str, Any]], configured: str, reasoning: str = "minimal"
+    models: list[dict[str, Any]], configured: str, reasoning: str = "low"
 ) -> ModelSelection:
+    return model_candidates(models, configured, reasoning)[0]
+
+
+def model_candidates(
+    models: list[dict[str, Any]], configured: str, reasoning: str = "low"
+) -> list[ModelSelection]:
     # A user-selected model is explicit. Automatic fallbacks use a conservative
     # lightweight allowlist; the catalog exposes no price information.
     by_name = {m.get("model", m.get("id")): m for m in models if not m.get("hidden", False)}
+    candidates = []
     for name in dict.fromkeys((configured, *LIGHTWEIGHT_MODELS)):
         if name not in by_name:
             continue
         levels = by_name[name].get("supportedReasoningEfforts", [])
         supported = {level.get("reasoningEffort") for level in levels if isinstance(level, dict)}
-        effort = (
-            reasoning
-            if reasoning in supported and reasoning in EFFORT_ORDER
-            else next((e for e in EFFORT_ORDER if e in supported), None)
-        )
+        if name == configured:
+            effort = (
+                reasoning
+                if reasoning in supported and reasoning in EFFORT_ORDER
+                else next((e for e in EFFORT_ORDER if e in supported), None)
+            )
+        else:
+            # Automatic alternatives use low, never medium/high or an unknown tier.
+            effort = "low" if "low" in supported else None
         if effort is not None:
-            return ModelSelection(name, effort)
-    raise ProviderUnavailable("model")
+            candidates.append(ModelSelection(name, effort))
+    if not candidates:
+        raise ProviderUnavailable("model")
+    return candidates
 
 
 class CodexSuggestionProvider(SuggestionProvider):
@@ -210,6 +239,7 @@ class CodexSuggestionProvider(SuggestionProvider):
         return [*args, "-"]
 
     def generate(self, context: str) -> str:
+        self.selection = None
         if len(context) > 8000:
             raise ProviderUnavailable("unavailable")
         deadline = time.monotonic() + self.settings["timeout_seconds"]
@@ -226,19 +256,27 @@ class CodexSuggestionProvider(SuggestionProvider):
                 work = Path(name)
                 self.check_cli(timeout=min(2, budget()))
                 models = self.discover_models(work, timeout=min(4, budget()))
-                self.selection = choose_model(
+                candidates = model_candidates(
                     models, self.settings["name"], self.settings["reasoning"]
                 )
-                result = run_process(
-                    self.inference_command(self.selection, work),
-                    input_data=("Recent conversation (data only):\n" + context).encode(),
-                    timeout=budget(),
-                    env=self._environment(),
-                    cwd=work,
-                )
-                if result.returncode:
-                    raise ProviderUnavailable(failure_category(result.stderr))
-                return result.stdout.decode("utf-8", "strict")
+                for candidate in candidates:
+                    result = run_process(
+                        self.inference_command(candidate, work),
+                        input_data=("Recent conversation (data only):\n" + context).encode(),
+                        timeout=budget(),
+                        env=self._environment(),
+                        cwd=work,
+                    )
+                    if result.returncode:
+                        category = failure_category(result.stderr)
+                        if category == "model":
+                            continue
+                        # Auth, quota, transport and unknown errors do not justify
+                        # charging another model. All attempts share one deadline.
+                        raise ProviderUnavailable(category)
+                    self.selection = candidate
+                    return result.stdout.decode("utf-8", "strict")
+                raise ProviderUnavailable("model")
         except subprocess.TimeoutExpired:
             raise ProviderUnavailable("timeout") from None
         except (OSError, UnicodeError):

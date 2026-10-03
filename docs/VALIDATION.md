@@ -1,5 +1,50 @@
 # Validation
 
+## v0.1.2 — 2026-10-03–04, independent Windows and WSL environments
+
+**Status: PASS for automated checks, authenticated suggestions and isolated real CLI
+Hook integration. Desktop Hook trust and clipboard consent remain user-controlled.**
+
+```text
+Windows: fresh Python 3.12.10 venv, copied plugin bundle
+  pytest                         229 passed, 7 platform/opt-in skips (9.66s)
+WSL: fresh Linux-local venv, copied plugin bundle, Codex CLI 0.160.0
+  pytest with CLI integration    228 passed, 8 Windows-only skips (23.01s)
+ruff check / format check        PASS — 42 repository Python files
+Installed Windows plugin         0.1.2, enabled
+PowerShell install -Probe        PASS — authenticated short suggestion
+Synthetic multi-turn test        15/15 valid real generated suggestions
+Selected model in all 15 turns   gpt-5.6-luna / low
+Clipboard read or write          None
+```
+
+The synthetic dialogue concerns a fictional local notes app. Each stop event uses
+only the latest five visible messages, generates through the authenticated Codex
+child process, and renders a display-only suggestion. UTF-8 reports contain the
+fictional user/assistant messages, exact suggestions, selected model and timings.
+This validates that pipeline, not the desktop UI presentation or real clipboard.
+
+Six opt-in cases use real Codex installation/exec/Stop Hook processes with a local
+simulated Responses service and disposable CODEX_HOME, without real credentials.
+They cover installation/removal, short no-tool ephemeral inference, runtime model
+rejection followed by gpt-6-luna/low, English/Unicode Hook output, no recursion, and
+root-task success after child authentication failure. Codex may retransmit the first
+rejected HTTP request; the provider selects only one fallback candidate in that case.
+Tests verify actual rollout files, excluding Codex's bundled example JSONL fixtures.
+
+Eight Windows installer cases simulate existing/missing/old Python, a broken App
+Execution Alias, missing winget, download failure, Python still absent after install,
+and Doctor failure. They invoke PowerShell but do not download or install Python.
+The actual installer/probe/reinstall passed with Python already installed. A clean
+Windows machine's first-time automatic-download path remains unverified end to end.
+
+An initial WSL run from the mounted Windows venv/source hit startup deadlines and
+test-environment assumptions (Python PATH and bundled example files). The corrected
+independent Linux-local environment passed; production deadlines were not increased.
+Model discovery has no price field: the bounded lightweight allowlist does not prove
+lowest current price. Authentication, quota, timeout, transport and unknown errors
+never initiate fallback; all model selections share the same 15-second deadline.
+
 ## v0.1.1 — 2026-10-03, Windows
 
 **Status: PASS for the Windows installer and authenticated inference probe.**

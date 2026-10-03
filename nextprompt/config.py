@@ -20,7 +20,7 @@ DEFAULTS: dict[str, Any] = {
     "trigger_mode": "every_turn",
     "clipboard": {"auto_copy": None, "osc52_fallback": False},
     "context": {"last_messages": 5, "max_chars_per_message": 2500, "max_total_chars": 8000},
-    "model": {"name": "gpt-5.6-luna", "reasoning": "minimal", "timeout_seconds": 15},
+    "model": {"name": "gpt-5.6-luna", "reasoning": "low", "timeout_seconds": 15},
     "suggestion": {"max_words": 20, "max_chars": 240},
     "privacy": {"redact_secrets": True},
 }

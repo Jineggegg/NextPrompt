@@ -2,7 +2,7 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 **Codex-Prompty** is the repository/package name; **NextPrompt** is the plugin and skill name.
-Version: **0.1.1**. Runtime: Python 3.10+, standard library only.
+Version: **0.1.2**. Runtime: Python 3.10+, standard library only.
 
 ```text
 Codex:
@@ -26,7 +26,7 @@ one short suggestion or nothing when the response is invalid or unhelpful.
 - Root `Stop` hook only; no `SubagentStop` suggestions.
 - Last 5 visible user/assistant messages, 2500 characters per message, 8000 total.
 - Common credential redaction before clipping or inference.
-- Account model discovery, conservative lightweight fallback, lowest supported reasoning.
+- Account model discovery, conservative lightweight runtime fallback, `low` reasoning by default.
 - Explicit clipboard opt-in; display only and unavailable-clipboard fallback.
 - Windows, WSL, macOS, Wayland and X11 clipboard adapters; optional OSC 52.
 - No automatic execution, repository scan, transcript database or NextPrompt telemetry.
@@ -280,7 +280,7 @@ Defaults:
     "max_chars_per_message": 2500,
     "max_total_chars": 8000
   },
-  "model": {"name": "gpt-5.6-luna", "reasoning": "minimal", "timeout_seconds": 15},
+  "model": {"name": "gpt-5.6-luna", "reasoning": "low", "timeout_seconds": 15},
   "suggestion": {"max_words": 20, "max_chars": 240},
   "privacy": {"redact_secrets": true}
 }
@@ -341,9 +341,21 @@ The catalog has no pricing field, and may fall back to Codex's bundled catalog:
 a listed model is not proof of entitlement or current price. This allowlist is
 an explicit V1 policy, not an assertion that it calculates the lowest cost model.
 No large/default model is selected automatically. An explicitly configured larger
-model is a user choice. Failed inference skips instead of silently changing tiers.
-`minimal` maps to `low` for the currently listed Luna models; high reasoning is
-never selected by V1.
+model is a user choice. If a catalog-listed model is explicitly rejected at inference
+time (missing, unsupported or inaccessible), NextPrompt tries the next listed
+lightweight candidate at `low`. Hidden models and candidates without `low` are skipped.
+Each candidate gets at most one child execution and all attempts share the same
+15-second deadline. Codex may retry HTTP requests within that child execution.
+Authentication, quota, timeout, network and unknown errors stop immediately; they do
+not trigger model hopping. No expensive tier is selected automatically.
+Existing explicit `none`/`minimal` settings remain respected for the configured
+model; new settings default to `low`. High reasoning is never selected by V1.
+
+The suggestion style is inspired by Claude-style prompt continuation: predict what
+the user would naturally type next, in their language, as one short specific clause.
+It is not a copy of Claude's private system prompt and does not call Claude. Suggestions
+preserve stated approval/read-only boundaries, avoid completed work and do not invent
+features. When the task is finished, silence is preferable to an unnecessary suggestion.
 
 Authentication remains owned by Codex, through the existing `CODEX_HOME` and
 runtime credential routing. NextPrompt neither reads nor copies OAuth tokens,
