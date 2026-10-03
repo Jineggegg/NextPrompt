@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.4
+
+- Keep the NextPrompt product name and existing six skill commands unchanged.
+- Ask Y/N for automatic clipboard copy during Windows installation, save the
+  choice, and report ON/automatic copy or OFF/display only at completion.
+- Default empty interactive answers to display only; support explicit
+  `-AutoCopy on|off` for unattended installation. Never infer consent from silence.
+- Verify interactive choices against real isolated configuration writes, without
+  changing the user's clipboard or trusting Hooks automatically.
+
 ## 0.1.3 — 2026-10-04
 
 - Display suggestions immediately after plugin loading and Hook trust, without

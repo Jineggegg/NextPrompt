@@ -1,5 +1,39 @@
 # Validation
 
+## v0.1.4 — 2026-10-04, clipboard choice at installation
+
+- Full Windows suite: **247 passed, 7 skipped**. Ruff lint and format checks passed.
+- Copied bundle in an independent Windows venv: all **21 installer cases passed**;
+  all six skills validated in UTF-8 mode.
+- The installer keeps the NextPrompt name and all six existing skill commands.
+- Installer tests run real PowerShell with simulated prerequisite commands and
+  persist the choice through the real configuration CLI into disposable directories.
+  They cover Y/Yes, N/No, empty input, invalid input/retry, explicit unattended flags,
+  unavailable interactive input, prerequisite failures and failed preference saving.
+- Y saves `auto_copy: true` and the completion report states automatic copy is ON;
+  N or empty input saves false and reports display only. Tests do not copy to the
+  user's real clipboard, download Python or grant Hook trust.
+
+## Measured latency and token scope
+
+The existing **v0.1.2** benchmark generated 15 valid suggestions from a fictional
+Chinese notes-app conversation using **gpt-5.6-luna / low**. Measurements cover the
+Stop-handler pipeline, including context processing, model discovery and authenticated
+child inference. They exclude the parent conversation and desktop rendering. Clipboard
+copy was off. This is one recorded sample, not a new v0.1.4 benchmark or a speed guarantee.
+
+- Mean: **4.372 seconds**; median: **4.19 seconds**.
+- **11 of 15** rounds took 3–5 seconds; all rounds ranged from **3.06 to 6.56 seconds**.
+- [Raw synthetic dialogue and timings](benchmarks/nextprompt-15-rounds.json).
+
+Low-overhead design is supported by bounded recent context, short output, `low`
+reasoning and no repository investigation in the suggestion child. The configured
+limits are **5 visible messages / 8000 characters** and **20 words / 240 characters**;
+these are not token counts. The benchmark did not record complete input, output or
+reasoning usage, current pricing, or a comparison against the parent conversation.
+Consequently, negligible token consumption and negligible cost are not established.
+The separate request may consume account quota; actual use depends on context and model.
+
 ## v0.1.3 — 2026-10-04, setup-free display onboarding
 
 - Independent Windows environment: **234 passed, 7 skipped**.

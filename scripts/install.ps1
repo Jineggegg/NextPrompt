@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param(
-    [switch]$Probe
+    [switch]$Probe,
+    [ValidateSet("on", "off")]
+    [string]$AutoCopy
 )
 
 Set-StrictMode -Version Latest
@@ -114,10 +116,42 @@ if ($LASTEXITCODE -ne 0) {
     throw "NextPrompt Doctor reported a required check failure."
 }
 
+if ([string]::IsNullOrWhiteSpace($AutoCopy)) {
+    Write-Host ""
+    Write-Host "NextPrompt clipboard preference"
+    Write-Host "Automatically copy suggested next prompts to your clipboard?"
+    Write-Host "Y = automatic copy; N = display only (default)."
+    Write-Host "Other local applications may read clipboard contents."
+    try {
+        while ([string]::IsNullOrWhiteSpace($AutoCopy)) {
+            $answer = (Read-Host "Choose Y or N [N]").Trim().ToLowerInvariant()
+            switch ($answer) {
+                { $_ -in @("y", "yes") } { $AutoCopy = "on" }
+                { $_ -in @("", "n", "no") } { $AutoCopy = "off" }
+                default { Write-Host "Please enter Y or N." }
+            }
+        }
+    }
+    catch {
+        throw "Clipboard preference was not saved. Rerun interactively, or pass -AutoCopy on|off explicitly."
+    }
+}
+
+& $python.Command (Join-Path $repoRoot "scripts\nextprompt.py") setup --auto-copy $AutoCopy
+if ($LASTEXITCODE -ne 0) {
+    throw "Could not save the NextPrompt clipboard preference."
+}
+
 Write-Host ""
 Write-Host "NextPrompt installed successfully."
-Write-Host "New installs use display-only mode. Existing settings are preserved."
-Write-Host "No setup is required to display suggestions; clipboard copy is opt-in."
+if ($AutoCopy -eq "on") {
+    Write-Host "Automatic clipboard copy: ON. New suggestions will be copied automatically."
+}
+else {
+    Write-Host "Automatic clipboard copy: OFF. Suggestions will be displayed only."
+}
+Write-Host "Your clipboard choice has been saved. Other existing settings are preserved."
+Write-Host "No additional setup is required."
 Write-Host ""
 Write-Host "Finish in Codex:"
 Write-Host "1. Fully quit and reopen Codex to load the plugin and refreshed PATH."
@@ -128,6 +162,6 @@ Write-Host "   Next prompt:"
 Write-Host "   Run the full regression suite and review the final diff."
 Write-Host "   (Example only; suggestions depend on the conversation.)"
 Write-Host ""
-Write-Host "Optional: run `$nextprompt-setup to enable automatic clipboard copy or change settings."
+Write-Host "Optional: run `$nextprompt-setup to change clipboard copy or other settings."
 Write-Host "Help: run `$nextprompt-status or `$nextprompt-doctor."
 Write-Host "If /hooks is unavailable, use a supported Codex client/CLI; automatic suggestions are not verified until the hook loads and is trusted."

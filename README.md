@@ -2,7 +2,24 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 **Codex-Prompty** is the repository/package name; **NextPrompt** is the plugin and skill name.
-Version: **0.1.3**. Runtime: Python 3.10+, standard library only.
+Version: **0.1.4**. Runtime: Python 3.10+, standard library only.
+
+**下一句，已经准备好了。** 每轮完成后，NextPrompt 为你准备一句简短的下一步提示词。
+安装时选择 **Y**，有效建议就会**自动复制到剪贴板**：按 **Ctrl+V**（macOS：**Cmd+V**），
+检查后发送，省去手动选中和复制。
+
+- **通常几秒就绪。** 独立轻量会话生成建议；15 轮真实模型测试中，11 轮耗时
+  **3–5 秒**，平均 **4.37 秒**。完整样本范围为 3.06–6.56 秒，实际速度随模型和网络变化。
+- **为低 token 开销而设计。** 只使用最近 5 条可见消息（最多 8000 字符），默认轻量模型
+  配合 `low` 思考，只生成一句建议（最多 20 个词、240 字符）。独立请求仍会消耗额度；
+  完整输入、输出与思考 token 尚未计量，不能据此保证“几乎零消耗”。
+- **自动加入剪贴板，直接粘贴继续。** 安装选择 Y 后会保存偏好，并在结束报告中确认已开启。
+  选择 N 或直接回车则仅显示建议；可随时通过 `$nextprompt-setup` 切换。
+
+**Your next instruction, ready to paste.** Opt into automatic clipboard copy during installation,
+then paste, review and send. Most of our 15 measured synthetic turns took **3–5 seconds**
+(mean **4.37s**). Short context and a lightweight model at `low` keep the request focused;
+actual token usage has not been measured. See the [measurement details](docs/VALIDATION.md#measured-latency-and-token-scope).
 
 ```text
 Codex:
@@ -29,7 +46,8 @@ one short suggestion or nothing when the response is invalid or unhelpful.
 - Last 5 visible user/assistant messages, 2500 characters per message, 8000 total.
 - Common credential redaction before clipping or inference.
 - Account model discovery, conservative lightweight runtime fallback, `low` reasoning by default.
-- Explicit clipboard opt-in; display only and unavailable-clipboard fallback.
+- Automatically copy valid suggestions to the clipboard after explicit opt-in during installation;
+  display-only mode and manual-copy fallback are also available.
 - Windows, WSL, macOS, Wayland and X11 clipboard adapters; optional OSC 52.
 - No automatic execution, repository scan, transcript database or NextPrompt telemetry.
 - Setup, status, enable, disable, manual suggestion and doctor skills.
@@ -78,7 +96,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 
 The script verifies `codex`, installs Python 3.12 through the official `winget`
 source when required, refreshes the current process PATH, registers the marketplace,
-installs the plugin and runs Doctor. Add `-Probe` to perform a synthetic inference
+installs the plugin, runs Doctor and asks Y/N about automatic clipboard copy.
+Y enables automatic copy; N or an empty answer selects display only. The choice
+is saved and clearly reported at completion; other existing settings are preserved.
+For unattended installation, pass `-AutoCopy on` or `-AutoCopy off` explicitly.
+Add `-Probe` to perform a synthetic inference
 test; it may consume model quota. The execution-policy override applies only to this
 PowerShell process and does not change the user's system policy. If `winget` is
 unavailable, the script stops with instructions instead of downloading an unverified
@@ -123,15 +145,28 @@ make it public.
 
 Setup is not a prerequisite and is not specific to the repository owner. New
 installations default to **display only**, with automatic clipboard copy off.
-Existing settings are preserved. After loading the plugin and trusting its Hook,
+The Windows installer asks for the clipboard preference and updates only that
+chosen setting; manual installs preserve existing settings. After loading the plugin
+and trusting its Hook,
 complete a normal conversation turn to see a useful next-prompt suggestion.
 
-The Windows installer prints this completion guide after Doctor passes:
+After Doctor passes, the Windows installer asks:
+
+```text
+NextPrompt clipboard preference
+Automatically copy suggested next prompts to your clipboard?
+Y = automatic copy; N = display only (default).
+Other local applications may read clipboard contents.
+Choose Y or N [N]:
+```
+
+If you enter **Y**, the completion guide includes:
 
 ```text
 NextPrompt installed successfully.
-New installs use display-only mode. Existing settings are preserved.
-No setup is required to display suggestions; clipboard copy is opt-in.
+Automatic clipboard copy: ON. New suggestions will be copied automatically.
+Your clipboard choice has been saved. Other existing settings are preserved.
+No additional setup is required.
 
 Finish in Codex:
 1. Fully quit and reopen Codex to load the plugin and refreshed PATH.
@@ -142,10 +177,23 @@ Finish in Codex:
    Run the full regression suite and review the final diff.
    (Example only; suggestions depend on the conversation.)
 
-Optional: run $nextprompt-setup to enable automatic clipboard copy or change settings.
+Optional: run $nextprompt-setup to change clipboard copy or other settings.
 Help: run $nextprompt-status or $nextprompt-doctor.
 If /hooks is unavailable, use a supported Codex client/CLI; automatic suggestions are not verified until the hook loads and is trusted.
 ```
+
+If you enter **N** or press Enter, the mode line instead reads:
+
+```text
+Automatic clipboard copy: OFF. Suggestions will be displayed only.
+```
+
+An unavailable interactive terminal stops with guidance to use `-AutoCopy on|off`;
+it never silently enables copying. If saving the preference fails, no successful
+installation report is printed. Enabling copy does not copy anything at installation:
+copying occurs only for valid suggestions after completed turns, once the Hook loads
+and is trusted. A missing clipboard backend is reported by the suggestion output;
+the suggestion remains available for manual copy.
 
 The same restart and Hook review steps apply to direct `codex plugin add` installs;
 those commands are supplied by Codex and cannot print this installer's custom guide.

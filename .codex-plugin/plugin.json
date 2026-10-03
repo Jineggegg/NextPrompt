@@ -1,6 +1,6 @@
 {
   "name": "nextprompt",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Lightweight next-prompt suggestions after completed Codex turns.",
   "skills": "./skills",
   "hooks": "./hooks/hooks.json",
