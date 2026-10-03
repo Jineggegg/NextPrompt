@@ -80,6 +80,12 @@ def test_installer_prerequisite_paths(python):
         assert args[args.index("--source") + 1] == "winget"
         assert "--silent" in args and "--disable-interactivity" in args
     assert "--probe" in calls[-1]["arguments"]
+    output = result["output"]
+    assert "No setup is required to display suggestions" in output
+    assert "Fully quit and reopen Codex" in output
+    assert "Open /hooks" in output and "approve/trust it" in output
+    assert "Existing settings are preserved" in output
+    assert "Optional: run $nextprompt-setup" in output
 
 
 @pytest.mark.parametrize(
@@ -115,4 +121,7 @@ def run_installer(**overrides):
         timeout=15,
         check=True,
     )
-    return json.loads(result.stdout.decode("utf-8-sig").strip().splitlines()[-1])
+    output = result.stdout.decode("utf-8-sig").strip()
+    parsed = json.loads(output.splitlines()[-1])
+    parsed["output"] = output
+    return parsed

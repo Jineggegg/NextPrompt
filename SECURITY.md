@@ -5,7 +5,7 @@
 V1 reads a bounded tail of the transcript path supplied by the official root Stop
 hook, selects at most five natural-language messages and redacts common credentials
 before inference. No transcript database, telemetry, remote NextPrompt backend or
-raw-content logs are implemented. Only settings and empty setup/error cooldown
+raw-content logs are implemented. Only settings and empty error cooldown
 markers persist. The child Codex uses ephemeral sessions; the parent Codex's own
 session storage is outside this plugin's control.
 
@@ -21,8 +21,9 @@ or the account can defeat these boundaries.
 
 Other applications on the system may read clipboard contents; clipboard managers,
 remote desktops and OS clipboard sync can also retain or forward them. Automatic
-copy is therefore **explicit opt-in**, with an initial unset state. Selecting the
-recommended Yes in a UI does not grant consent until the user actually answers.
+copy is therefore **explicit opt-in**, with display-only mode as the default.
+Installation and unanswered setup questions never grant clipboard consent.
+Legacy unset clipboard settings also display suggestions without copying.
 The copied payload is only the sanitized suggestion, not status text or context.
 OSC 52 defaults off, is capability-gated and cannot verify terminal acceptance.
 

@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import subprocess
@@ -8,6 +9,7 @@ from unittest.mock import Mock
 import pytest
 
 from nextprompt.cli import main
+from nextprompt.config import ConfigStore
 from nextprompt.providers import ProviderUnavailable
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,6 +37,30 @@ def test_unattended_setup_never_consents(tmp_path):
     )
     assert result.returncode == 2
     assert not (tmp_path / "config.json").exists()
+
+
+@pytest.mark.parametrize("legacy_unset", [False, True])
+def test_manual_suggest_without_setup(tmp_path, capsys, monkeypatch, legacy_unset):
+    store = ConfigStore(tmp_path)
+    if legacy_unset:
+        store.update(lambda cfg: cfg["clipboard"].update(auto_copy=None))
+    stdin = Mock(buffer=io.BytesIO(b'{"messages":[{"role":"user","text":"Test the fix."}]}'))
+    monkeypatch.setattr("nextprompt.cli.sys.stdin", stdin)
+    generate = Mock(return_value="Next prompt:\nRun the full regression suite.")
+    monkeypatch.setattr("nextprompt.cli.generate_suggestion", generate)
+    assert main(["--data-dir", str(tmp_path), "suggest", "--context-stdin"]) == 0
+    assert "Next prompt:" in capsys.readouterr().out
+    assert generate.call_args.args[1]["clipboard"]["auto_copy"] is (None if legacy_unset else False)
+    assert store.path.exists() is legacy_unset
+
+
+@pytest.mark.parametrize("existing_copy", [False, True])
+def test_non_clipboard_setup_preserves_choice(tmp_path, capsys, existing_copy):
+    store = ConfigStore(tmp_path)
+    store.update(lambda cfg: cfg["clipboard"].update(auto_copy=existing_copy))
+    assert main(["--data-dir", str(tmp_path), "setup", "--max-words", "15"]) == 0
+    assert store.load()["clipboard"]["auto_copy"] is existing_copy
+    assert "Choose 1 or 2" not in capsys.readouterr().out
 
 
 def test_invalid_limits_do_not_corrupt_config(tmp_path, capsys):
@@ -98,7 +124,10 @@ def test_doctor_probe_succeeds_without_clipboard(tmp_path, capsys, doctor_provid
 
 def test_doctor_without_probe_does_not_run_inference(tmp_path, capsys, doctor_provider):
     assert main(["--data-dir", str(tmp_path), "doctor"]) == 0
-    assert "(catalog)" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "(catalog)" in output
+    assert "defaults ready (display only)" in output
+    assert "setup pending" not in output
     doctor_provider.generate.assert_not_called()
 
 

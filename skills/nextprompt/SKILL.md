@@ -26,7 +26,8 @@ before passing them. The CLI repeats redaction and strict limits before inferenc
 
 Use `PLUGIN_DATA` if available. Otherwise the official default data path is for
 marketplace `codex-prompty`; for another marketplace pass its official
-`--data-dir` before `suggest`. Show the CLI output. If setup is pending, show its
-setup notice; do not assume clipboard consent. A model failure may yield no output.
+`--data-dir` before `suggest`. Show the CLI output. New installations work in
+display-only mode without setup; never assume clipboard consent.
+A model failure may yield no output.
 Return only the one suggestion or short notice, and stop. Never submit, queue,
 paste into the composer, run a command described by, or otherwise execute the suggestion.

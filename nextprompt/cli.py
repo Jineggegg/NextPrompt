@@ -13,7 +13,7 @@ from typing import Any
 
 from .clipboard import SystemClipboardAdapter
 from .config import ConfigStore
-from .hook import SETUP_NOTICE, generate_suggestion
+from .hook import generate_suggestion
 from .platform import detect_platform
 from .process import run_process
 from .providers import CodexSuggestionProvider, ProviderUnavailable, choose_model
@@ -27,7 +27,7 @@ def status(cfg: dict[str, Any]) -> str:
         [
             "NextPrompt",
             f"Enabled:          {'Yes' if cfg['enabled'] else 'No'}",
-            f"Auto-copy:        {'Unset (run setup)' if auto is None else 'Yes' if auto else 'No'}",
+            f"Auto-copy:        {'Yes' if auto is True else 'No (display only)'}",
             f"Model:            {cfg['model']['name']} (configured)",
             f"Context:          Last {cfg['context']['last_messages']} messages",
             f"Max prompt:       {cfg['suggestion']['max_words']} words",
@@ -48,7 +48,8 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     rows = ["NextPrompt Doctor", "Python              ✓ " + sys.version.split()[0]]
     cfg = store.load()
     rows.append(
-        "Config              ✓ " + ("configured" if store.path.exists() else "setup pending")
+        "Config              ✓ "
+        + ("configured" if store.path.exists() else "defaults ready (display only)")
     )
     root = Path(__file__).resolve().parents[1]
     try:
@@ -146,13 +147,25 @@ def parser() -> argparse.ArgumentParser:
 def run(args: argparse.Namespace) -> int:
     store = ConfigStore(args.data_dir)
     if args.command == "setup":
-        if args.auto_copy is None and store.load()["clipboard"]["auto_copy"] is None:
+        settings_requested = any(
+            getattr(args, key) is not None
+            for key in (
+                "enabled",
+                "model",
+                "context_messages",
+                "max_words",
+                "redaction",
+                "osc52",
+                "trigger_mode",
+            )
+        )
+        if args.auto_copy is None and not settings_requested:
             if not sys.stdin.isatty():
                 print("Setup requires explicit --auto-copy on or --auto-copy off.")
                 return 2
             print(
                 "NextPrompt Setup\nAutomatically copy suggested next prompts to your clipboard?\n"
-                "Recommended: Yes\n1. Yes — automatically copy suggestions\n"
+                "Default: No (display only)\n1. Yes — automatically copy suggestions\n"
                 "2. No  — display suggestions only"
             )
             while args.auto_copy is None:
@@ -199,9 +212,6 @@ def run(args: argparse.Namespace) -> int:
     elif args.command == "suggest":
         cfg = store.load()
         if not cfg["enabled"]:
-            return 0
-        if cfg["clipboard"]["auto_copy"] is None:
-            print(SETUP_NOTICE)
             return 0
         data = sys.stdin.buffer.read(524289)
         if len(data) > 524288:

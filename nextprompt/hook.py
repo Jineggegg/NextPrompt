@@ -19,11 +19,6 @@ from .transcript import (
     format_context,
 )
 
-SETUP_NOTICE = (
-    "NextPrompt is installed.\nRecommended:\nEnable automatic clipboard copy.\n"
-    "Run:\n$nextprompt-setup"
-)
-
 
 def generate_suggestion(
     messages: list[Message],
@@ -82,8 +77,6 @@ def handle_stop(
         cfg = store.load()
         if not cfg["enabled"] or cfg["trigger_mode"] != "every_turn":
             return None
-        if cfg["clipboard"]["auto_copy"] is None:
-            return SETUP_NOTICE if store.notice_once(".setup-notice") else None
         path = payload.get("transcript_path")
         if not isinstance(path, str) or not path:
             return None

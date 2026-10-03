@@ -244,7 +244,7 @@ def test_real_stop_hook_one_child_no_recursive_turn(real_cli, tmp_path, monkeypa
     )
     hooks_path.write_text(json.dumps(hooks))
     store = ConfigStore()
-    store.update(lambda cfg: cfg["clipboard"].update(auto_copy=False))
+    assert not store.path.exists()  # Real first-run install needs no setup.
     result = command(
         [
             "exec",

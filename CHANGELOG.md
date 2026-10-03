@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.3 — 2026-10-04
+
+- Display suggestions immediately after plugin loading and Hook trust, without
+  requiring setup. Default clipboard copy to off; preserve existing explicit settings
+  and safely treat legacy unset settings as display only.
+- Make setup optional for clipboard opt-in or other settings; do not gate unrelated
+  configuration changes on a clipboard question.
+- Show restart, Hook review/trust, first-use examples and optional setup instructions
+  at the end of the Windows installer, with matching English and Chinese documentation.
+- Exercise fresh-install, no-config Stop Hooks through real CLI integration tests.
+
 ## 0.1.2 — 2026-10-03
 
 - Retry explicit model-unavailable errors with the next catalog-listed lightweight

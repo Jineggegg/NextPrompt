@@ -10,12 +10,16 @@ plugin data path for marketplace `codex-prompty`; if installed through a differe
 marketplace, pass `--data-dir` with its official plugin data directory before the command.
 Never store settings inside the user's project. Never inspect credential files.
 
+Setup is optional: new installations already display suggestions without copying.
+If the user only requests another setting (such as a model or context limit),
+apply that setting without changing clipboard behavior or asking an unrelated question.
 If the user already explicitly chose clipboard on/off, apply that choice directly.
-Otherwise show this question and wait for their answer:
+For a general setup request or a request to choose clipboard behavior, show this
+question and wait for their answer:
 
 NextPrompt Setup
 Automatically copy suggested next prompts to your clipboard?
-Recommended: Yes
+Default: No (display only)
 1. Yes — automatically copy suggestions
 2. No  — display suggestions only
 

@@ -1,5 +1,28 @@
 # Validation
 
+## v0.1.3 — 2026-10-04, setup-free display onboarding
+
+- Independent Windows environment: **234 passed, 7 skipped**.
+- Independent WSL environment with real Codex CLI/local-service integration enabled:
+  **233 passed, 8 skipped**, including all six integration cases.
+- The real Stop Hook now generates display-only suggestions from a fresh install
+  with no config file; Unicode output and recursion isolation still pass.
+- Fresh and legacy unset configs never access or copy to the clipboard. Explicit
+  clipboard choices survive non-clipboard configuration changes and installation.
+- Real Windows installer registered and installed version **0.1.3**. Doctor reported
+  `defaults ready (display only)` and the installer displayed restart, `/hooks`
+  review/trust, an example suggestion, optional setup and diagnostic instructions.
+- A real account inference using the installed 0.1.3 CLI, synthetic conversation and
+  fresh data directory returned a useful suggestion without running setup or creating
+  `config.json`. It did not enable clipboard copying.
+- Ruff lint/format checks and both changed skills' validation passed. The skill
+  validator was run in UTF-8 mode on Windows for non-ASCII text.
+
+Desktop Hook approval/restart remains a user action. These checks do not prove that
+an already-open desktop chat has reloaded or trusted the updated Hook. Direct Codex
+plugin commands cannot display the PowerShell script's custom completion guide;
+their users must follow the matching README steps.
+
 ## v0.1.2 — 2026-10-03–04, independent Windows and WSL environments
 
 **Status: PASS for automated checks, authenticated suggestions and isolated real CLI

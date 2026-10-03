@@ -2,18 +2,20 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 **Codex-Prompty** is the repository/package name; **NextPrompt** is the plugin and skill name.
-Version: **0.1.2**. Runtime: Python 3.10+, standard library only.
+Version: **0.1.3**. Runtime: Python 3.10+, standard library only.
 
 ```text
 Codex:
 Implemented the authentication fix. Targeted tests pass.
-Next → Run the full regression suite and review the final diff.
-✓ Copied to clipboard
+Next prompt:
+Run the full regression suite and review the final diff.
 ```
 
 Codex's actual TUI adds its own `↳ Hook ·` prefix and indentation. The example shows
-NextPrompt's text, not a custom component. Paste with Ctrl+V (Cmd+V on macOS), review,
-then press Enter yourself. **NextPrompt never submits or executes the suggestion.**
+NextPrompt's default display-only text, not a custom component. Copy and review the
+suggestion before using it. With optional Auto Copy enabled, paste with Ctrl+V
+(Cmd+V on macOS), review, then press Enter yourself.
+**NextPrompt never submits or executes the suggestion.**
 
 ## What is NextPrompt? Why?
 
@@ -117,31 +119,57 @@ See [local test checklist](docs/LOCAL_TEST.md) for a Chinese quick start and cli
 checks. Source delivery is intended to remain private until the owner chooses to
 make it public.
 
-## First-time setup
+## After installation: no setup required for suggestions
 
-The tested CLI install is non-interactive and has no generic Yes/No setup callback.
-Until you configure clipboard behavior, NextPrompt shows this once, without inference:
+Setup is not a prerequisite and is not specific to the repository owner. New
+installations default to **display only**, with automatic clipboard copy off.
+Existing settings are preserved. After loading the plugin and trusting its Hook,
+complete a normal conversation turn to see a useful next-prompt suggestion.
+
+The Windows installer prints this completion guide after Doctor passes:
 
 ```text
-NextPrompt is installed.
-Recommended:
-Enable automatic clipboard copy.
-Run:
-$nextprompt-setup
+NextPrompt installed successfully.
+New installs use display-only mode. Existing settings are preserved.
+No setup is required to display suggestions; clipboard copy is opt-in.
+
+Finish in Codex:
+1. Fully quit and reopen Codex to load the plugin and refreshed PATH.
+2. Open /hooks, review the NextPrompt Stop hook, and approve/trust it.
+   Installation does not grant hook trust or bypass your approval.
+3. Complete a normal conversation turn. A useful suggestion appears as:
+   Next prompt:
+   Run the full regression suite and review the final diff.
+   (Example only; suggestions depend on the conversation.)
+
+Optional: run $nextprompt-setup to enable automatic clipboard copy or change settings.
+Help: run $nextprompt-status or $nextprompt-doctor.
+If /hooks is unavailable, use a supported Codex client/CLI; automatic suggestions are not verified until the hook loads and is trusted.
 ```
 
-Invoke **`$nextprompt-setup`** in Codex or say **“Configure NextPrompt.”** It asks:
+The same restart and Hook review steps apply to direct `codex plugin add` installs;
+those commands are supplied by Codex and cannot print this installer's custom guide.
+Installing just the skills does not register the automatic Stop Hook. Use the full
+plugin install described above for automatic suggestions. We never grant trust on
+your behalf. If no suggestion appears, run `$nextprompt-doctor` and check `/hooks`.
+Generic or repeated suggestions may be discarded; output is not guaranteed every turn.
+
+## Optional setup: clipboard copy or custom settings
+
+Only if you want automatic clipboard copy or different settings, invoke
+**`$nextprompt-setup`** in Codex or say **“Configure NextPrompt.”** A general setup asks:
 
 ```text
 NextPrompt Setup
 Automatically copy suggested next prompts to your clipboard?
-Recommended: Yes
+Default: No (display only)
 1. Yes — automatically copy suggestions
 2. No  — display suggestions only
 ```
 
-Only an explicit Yes enables copying. An absent answer or default recommendation
-does not count as consent. You can also configure explicitly from the checkout:
+Only an explicit Yes enables copying. An absent answer never enables it. Requests
+to change only a model or another setting preserve clipboard behavior and do not
+ask an unrelated clipboard question. You can also configure explicitly from the checkout:
 
 ```sh
 python scripts/nextprompt.py setup --auto-copy on
@@ -274,7 +302,7 @@ Defaults:
   "version": 1,
   "enabled": true,
   "trigger_mode": "every_turn",
-  "clipboard": {"auto_copy": null, "osc52_fallback": false},
+  "clipboard": {"auto_copy": false, "osc52_fallback": false},
   "context": {
     "last_messages": 5,
     "max_chars_per_message": 2500,
@@ -286,13 +314,14 @@ Defaults:
 }
 ```
 
-`auto_copy: null` means setup pending; `false` means display only. These context,
+`auto_copy: false` is the display-only default; legacy `null` also means display
+only without blocking inference. Only explicit `true` enables copying. These context,
 word and character limits are hard V1 ceilings; they can be decreased. Invalid
 configurations skip the hook without showing a traceback. Writes use a short
 exclusive lock, unique temporary file, fsync and atomic replacement. A leftover
 `.config.lock` after an interrupted settings update can be removed once no settings
 operation is active. No suggestion files, transcript caches or usage profiles exist.
-Only empty setup/error marker files are retained. Repeated model errors are shown
+Only empty error marker files are retained; older setup markers are ignored. Repeated model errors are shown
 at most once per category per hour; unexpected errors are silent.
 
 `every_turn` is the automatic default. `manual` disables automatic generation.
@@ -386,7 +415,7 @@ Exit code 0 means the checks requested by that command passed; code 1 means a re
 check failed. Only `--probe` validates an actual model response. Authentication and
 quota failures are summarized as safe categories, without the original CLI error.
 
-- No output: check setup, enabled/trigger settings, hook trust and transcript support.
+- No output: check enabled/trigger settings, hook trust and transcript support; setup is optional.
 - Model unavailable: run `codex login status` and the inference probe; reauthenticate
   using Codex's own login flow if required. No automatic login is attempted.
 - No clipboard backend: use display only, or install your preferred clipboard tool

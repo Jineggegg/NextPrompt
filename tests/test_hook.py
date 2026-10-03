@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 
 from nextprompt.config import ConfigStore
-from nextprompt.hook import SETUP_NOTICE, handle_stop
+from nextprompt.hook import handle_stop
 from nextprompt.output import CodexHookOutputAdapter
 from nextprompt.providers import ProviderUnavailable
 from nextprompt.transcript import Message
@@ -82,20 +82,25 @@ def test_clipboard_exception_still_displays(configured, provider, clipboard):
     assert "DO NOT LOG" not in text
 
 
-def test_first_run_once_no_inference(tmp_path, provider, clipboard):
+@pytest.mark.parametrize("legacy_unset", [False, True])
+def test_first_run_displays_without_setup_or_clipboard(tmp_path, provider, clipboard, legacy_unset):
     store = ConfigStore(tmp_path)
+    if legacy_unset:
+        store.update(lambda cfg: cfg["clipboard"].update(auto_copy=None))
     adapter = conversation()
     assert (
         handle_stop(
             PAYLOAD, store=store, conversation=adapter, provider=provider, clipboard=clipboard
         )
-        == SETUP_NOTICE
+        == "Next prompt:\nRun the full regression suite and review the final diff."
     )
-    assert handle_stop(PAYLOAD, store=store) is None
-    assert store.load()["clipboard"]["auto_copy"] is None
-    adapter.read.assert_not_called()
-    provider.generate.assert_not_called()
+    assert store.load()["clipboard"]["auto_copy"] is (None if legacy_unset else False)
+    assert store.path.exists() is legacy_unset
+    adapter.read.assert_called_once()
+    provider.generate.assert_called_once()
+    clipboard.available.assert_not_called()
     clipboard.copy.assert_not_called()
+    assert not (tmp_path / ".setup-notice").exists()
 
 
 @pytest.mark.parametrize(
@@ -161,12 +166,19 @@ def test_invalid_config_fails_open(tmp_path, provider):
 
 
 def test_hook_utf8_on_non_utf8_host(tmp_path):
+    launcher = (
+        "import sys,runpy; "
+        f"sys.path.insert(0, {str(ROOT)!r}); "
+        "import nextprompt.hook; "
+        "nextprompt.hook.handle_stop=lambda _: 'Next prompt:\\n运行完整测试 🚀。'; "
+        f"runpy.run_path({str(ROOT / 'hooks/stop.py')!r}, run_name='__main__')"
+    )
     result = subprocess.run(
-        [sys.executable, str(ROOT / "hooks/stop.py")],
+        [sys.executable, "-c", launcher],
         input=json.dumps(PAYLOAD).encode(),
         capture_output=True,
         env={**os.environ, "PLUGIN_DATA": str(tmp_path), "PYTHONIOENCODING": "ascii"},
         timeout=3,
     )
     assert result.returncode == 0 and result.stderr == b""
-    assert json.loads(result.stdout)["systemMessage"] == SETUP_NOTICE
+    assert json.loads(result.stdout)["systemMessage"] == "Next prompt:\n运行完整测试 🚀。"

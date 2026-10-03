@@ -9,7 +9,7 @@ from nextprompt.config import ConfigError, ConfigStore, data_directory, validate
 def test_defaults_do_not_grant_consent_or_write(tmp_path):
     store = ConfigStore(tmp_path / "absent")
     cfg = store.load()
-    assert cfg["enabled"] and cfg["clipboard"]["auto_copy"] is None
+    assert cfg["enabled"] and cfg["clipboard"]["auto_copy"] is False
     assert not store.root.exists()
 
 
