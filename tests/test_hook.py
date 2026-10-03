@@ -137,7 +137,11 @@ def test_missing_transcript_does_not_infer(configured, provider):
     provider.generate.assert_not_called()
 
 
-@pytest.mark.parametrize("input_bytes", [b"", b"bad JSON", b"[]", b"x" * 70000])
+@pytest.mark.parametrize(
+    "input_bytes",
+    [b"", b"bad JSON", b"[]", b"x" * 70000],
+    ids=["empty", "malformed", "json-array", "oversized"],
+)
 def test_entrypoint_always_zero(tmp_path, input_bytes):
     result = subprocess.run(
         [sys.executable, str(ROOT / "hooks/stop.py")],
