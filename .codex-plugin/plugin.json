@@ -1,0 +1,11 @@
+{
+  "name": "nextprompt",
+  "version": "0.1.0",
+  "description": "Lightweight next-prompt suggestions after completed Codex turns.",
+  "skills": "./skills",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "NextPrompt",
+    "shortDescription": "One useful next prompt, with optional clipboard copy."
+  }
+}
