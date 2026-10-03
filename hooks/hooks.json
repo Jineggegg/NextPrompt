@@ -1,0 +1,10 @@
+{
+  "description": "NextPrompt: one suggestion, never a continuation or automatic submission.",
+  "hooks": {
+    "Stop": [{"hooks": [{
+      "type": "command",
+      "command": "python -c \"import os,runpy;runpy.run_path(os.path.join(os.environ['PLUGIN_ROOT'],'hooks','stop.py'),run_name='__main__')\"",
+      "timeout": 20
+    }]}]
+  }
+}
