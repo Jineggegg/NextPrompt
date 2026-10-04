@@ -2,7 +2,7 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 NextPrompt is the product, repository, package, plugin and marketplace name.
-Version: **0.1.12**. Runtime: Python 3.9+, standard library only.
+Version: **0.1.13**. Runtime: Python 3.9+, standard library only.
 
 **下一句，已经准备好了。** 每轮完成后，NextPrompt 为你准备一句简短的下一步提示词。
 安装时选择 **Y**，有效建议就会**自动复制到剪贴板**：按 **Ctrl+V**（macOS：**Cmd+V**），
@@ -82,17 +82,24 @@ V1 does not patch Codex or install fake buttons.
 ## Installation
 
 The hook runs `python` on PATH and falls back to `python3`, then to the Windows `py -3`
-launcher, when the previous one is missing or older than Python 3.9, so stock macOS
-(Python 3.9), Linux and py-launcher-only Windows installs need no extra setup. The runtime
+launcher, then to the versioned commands `python3.15` down to `python3.9`, when the previous
+one is missing or older than Python 3.9, so stock macOS (Python 3.9), Linux (also releases
+whose default `python3` is older but have a `python3.X` installed next to it) and
+py-launcher-only Windows installs need no extra setup. The runtime
 and Hook never install software. Only the explicitly invoked installers do, and only when
 Python 3.9+ is missing: on Windows, `winget` installs Python 3.12 for the current user
 (without `winget`, the official python.org installer is downloaded and run only if its
 Authenticode signature is valid and from the Python Software Foundation); on macOS,
 Homebrew or Apple's Command Line Tools; on Linux, the system package manager (with sudo).
+When a distribution's default `python3` package is older than 3.9 (Ubuntu 20.04, RHEL 8,
+openSUSE Leap 15), the Linux installer tries its versioned packages newest first, such as
+`python3.12` (apt), `python3.11` or `python39` (dnf/yum) and `python312` (zypper). If none
+is available it stops and says which old Python it found, instead of reporting success.
 
 Clone **Jineggegg/NextPrompt** with Git. The plugin bundles all six skills; no
 package publication or pip installation is needed. Commands in this guide use
-`python`; on macOS/Linux use `python3` if `python` is unavailable.
+`python`; on macOS/Linux use `python3` if `python` is unavailable, or a versioned command
+such as `python3.12` if both are older than 3.9.
 
 Windows quick install:
 
@@ -524,7 +531,8 @@ quota failures are summarized as safe categories, without the original CLI error
 
 - No output: check enabled/trigger settings, hook trust and transcript support; setup is optional.
 - `hook: Stop Failed`: run Doctor and check the `Hook Python` row; the hook needs
-  `python`, `python3` or (Windows) `py -3` with 3.9+ on PATH (the macOS-bundled `python3` qualifies).
+  `python`, `python3`, (Windows) `py -3` or one of `python3.15`–`python3.9` with 3.9+ on PATH
+  (the macOS-bundled `python3` qualifies).
 - Model unavailable: run `codex login status` and the inference probe; reauthenticate
   using Codex's own login flow if required. No automatic login is attempted.
 - No clipboard backend: use display only, or install your preferred clipboard tool
@@ -532,7 +540,8 @@ quota failures are summarized as safe categories, without the original CLI error
 - Plugin edits not reflected: remove/add the installed plugin to refresh its cached
   bundle, then review changed hook trust again.
 - `python` missing on Windows: rerun `scripts/install.ps1`; on other platforms,
-  install Python 3.9+ so that `python3` or `python` is on PATH.
+  rerun `scripts/install.sh`, or install Python 3.9+ so that `python3`, `python` or a
+  `python3.X` command is on PATH.
 - Malformed config: repair/delete only NextPrompt's own config, then run setup.
 
 ## Disable, uninstall and delete local config

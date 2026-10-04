@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.13 — 2026-10-04
+
+- Hosts whose default `python3` is older than 3.9 (Ubuntu 20.04, RHEL 8, openSUSE Leap 15)
+  now work when a newer Python is installed next to it: the hook command, Doctor and
+  `scripts/install.sh` also try `python3.15` down to `python3.9`, after `python`, `python3`
+  and `py -3`.
+- `scripts/install.sh` no longer stops at the distribution's default `python3` package when
+  it is too old: it tries the versioned packages newest first (`python3.13` … `python3.9`
+  with apt, `python3.13` … `python39` with dnf/yum, `python313` … `python39` with zypper).
+- When no Python 3.9+ can be installed, the installer names the old Python it found and
+  how to install a newer one, instead of suggesting to open a new terminal.
+- The six skills tell Codex to use a `python3.X` command when `python` and `python3` are
+  older than 3.9.
+- Re-trust the hooks in `/hooks` after updating: the hook commands changed (versioned
+  `python3.X` fallbacks).
+
 ## 0.1.12 — 2026-10-04
 
 - Add `scripts/install.sh` for macOS / Linux. Like the Windows installer it registers

@@ -34,6 +34,11 @@ OLD_PYTHON = """#!/bin/sh
 exit 1
 """
 
+# Python 3.8: fails the 3.9 check but reports its version.
+PYTHON_38 = """#!/bin/sh
+case "$2" in *print*) echo 3.8 ;; *) exit 1 ;; esac
+"""
+
 # A package manager that "installs" Python by putting the working shim in place.
 FAKE_INSTALLER = """#!/bin/sh
 echo "$(basename "$0") $*" >> "$NEXTPROMPT_TEST_LOG"
@@ -41,9 +46,30 @@ case "$*" in *update*) exit 0 ;; esac
 cp "$FAKE_PYTHON_SOURCE" "$(dirname "$0")/python3"
 """
 
+LINUX = {"uname": "#!/bin/sh\necho Linux\n", "id": "#!/bin/sh\necho 0\n"}
+# The distribution's python3 is 3.8 and installing python3 again changes nothing.
+OLD_DEFAULT = {**LINUX, "python3": PYTHON_38, "python": OLD_PYTHON}
 
-def run_installer(*args, codex_exit=0, doctor_exit=0, extra=None, answers=None):
-    """Run install.sh; with `answers`, stdin is a terminal that already holds those lines."""
+
+def versioned_installer(package, command):
+    """A package manager whose only Python 3.9+ is `package`, which provides `command`."""
+    return f"""#!/bin/sh
+echo "$(basename "$0") $*" >> "$NEXTPROMPT_TEST_LOG"
+for last; do :; done
+case "$last" in
+    {package}) cp "$FAKE_PYTHON_SOURCE" "$(dirname "$0")/{command}" ;;
+    python3 | update) ;;
+    *) exit 100 ;;
+esac
+"""
+
+
+def run_installer(*args, codex_exit=0, doctor_exit=0, extra=None, answers=None, isolated=False):
+    """Run install.sh; with `answers`, stdin is a terminal that already holds those lines.
+
+    `isolated` hides the host's own Python and package managers: PATH holds only the
+    shims and the few tools the scripts need.
+    """
     with tempfile.TemporaryDirectory(prefix="nextprompt-install-test-") as tmp:
         bin_dir = Path(tmp) / "bin"
         bin_dir.mkdir()
@@ -58,9 +84,16 @@ def run_installer(*args, codex_exit=0, doctor_exit=0, extra=None, answers=None):
         log = Path(tmp) / "calls.log"
         log.touch()
         data = Path(tmp) / "data"
+        path = f"{bin_dir}{os.pathsep}{os.environ['PATH']}"
+        if isolated:
+            tools = Path(tmp) / "tools"
+            tools.mkdir()
+            for tool in ("basename", "cp", "dirname", "tr"):
+                (tools / tool).symlink_to(shutil.which(tool))
+            path = f"{bin_dir}{os.pathsep}{tools}"
         env = {
             **os.environ,
-            "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+            "PATH": path,
             "PLUGIN_DATA": str(data),
             "NEXTPROMPT_TEST_LOG": str(log),
             "NEXTPROMPT_TEST_PYTHON": sys.executable,
@@ -189,6 +222,7 @@ def test_macos_without_python_installs_it_with_homebrew():
     result = run_installer(
         "--auto-copy",
         "on",
+        isolated=True,
         extra={
             "python3": OLD_PYTHON,
             "python": OLD_PYTHON,
@@ -206,14 +240,60 @@ def test_linux_without_python_installs_it_with_the_package_manager():
     result = run_installer(
         "--auto-copy",
         "off",
-        extra={
-            "python3": OLD_PYTHON,
-            "python": OLD_PYTHON,
-            "uname": "#!/bin/sh\necho Linux\n",
-            "id": "#!/bin/sh\necho 0\n",
-            "apt-get": FAKE_INSTALLER,
-        },
+        isolated=True,
+        extra={**LINUX, "python3": OLD_PYTHON, "python": OLD_PYTHON, "apt-get": FAKE_INSTALLER},
     )
     assert result["code"] == 0, result["output"]
     assert "apt-get install -y python3" in result["log"]
     assert result["config"]["clipboard"]["auto_copy"] is False
+
+
+@pytest.mark.parametrize(
+    ("manager", "newest", "package", "command"),
+    [
+        ("apt-get", "python3.13", "python3.12", "python3.12"),
+        ("dnf", "python3.13", "python3.11", "python3.11"),
+        ("yum", "python3.13", "python39", "python3.9"),
+        ("zypper", "python313", "python312", "python3.12"),
+    ],
+)
+def test_old_default_python_installs_a_versioned_package(manager, newest, package, command):
+    result = run_installer(
+        "--auto-copy",
+        "on",
+        isolated=True,
+        extra={**OLD_DEFAULT, manager: versioned_installer(package, command)},
+    )
+    assert result["code"] == 0, result["output"]
+    log = result["log"]
+    # Newest first, stopping at the first package that gives a usable Python.
+    assert log.index(f" {newest}\n") < log.index(f" {package}\n")
+    assert [line for line in log.splitlines() if line.startswith(manager)][-1].endswith(package)
+    assert "older than 3.9. Trying" in result["output"]
+    assert "NextPrompt installed successfully" in result["output"]
+
+
+def test_old_default_python_without_a_newer_package_says_so():
+    result = run_installer(
+        "--auto-copy",
+        "on",
+        isolated=True,
+        extra={**OLD_DEFAULT, "apt-get": versioned_installer("none-available", "python3.12")},
+    )
+    assert result["code"] != 0
+    # update, python3 and the five versioned packages.
+    assert result["calls"] == ["apt-get"] * 7
+    assert "Only python3 3.8 was found, which is older than 3.9" in result["output"]
+    assert "Open a new terminal" not in result["output"]
+    assert result["config"] is None
+
+
+def test_newer_versioned_python_next_to_an_old_default_is_used():
+    result = run_installer(
+        "--auto-copy",
+        "on",
+        isolated=True,
+        extra={**OLD_DEFAULT, "python3.11": FAKE_PYTHON, "apt-get": FAKE_INSTALLER},
+    )
+    assert result["code"] == 0, result["output"]
+    assert result["calls"] == ["codex", "codex", "doctor", "setup"]

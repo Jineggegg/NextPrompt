@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -7,6 +8,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from nextprompt.cli import HOOK_INTERPRETERS, VERSIONED_PYTHONS
 from nextprompt.config import ConfigStore
 from nextprompt.hook import handle_stop
 from nextprompt.output import CodexHookOutputAdapter
@@ -294,10 +296,17 @@ def shipped_hook_command():
     return hooks["hooks"]["Stop"][0]["hooks"][0]["command"]
 
 
-def run_shipped_hook(tmp_path, interpreters):
-    """Run the real hooks.json command as Codex does, with only the given commands on PATH."""
+def run_shipped_hook(tmp_path, interpreters, old=()):
+    """Run the real hooks.json command as Codex does, with only the given commands on PATH.
+
+    Commands in `old` behave like an interpreter older than 3.9: they exit 1.
+    """
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
+    for name in old:
+        shim = bin_dir / name
+        shim.write_text("#!/bin/sh\nexit 1\n")
+        shim.chmod(0o755)
     for name in interpreters:
         # The py launcher takes a leading `-3`; its shim drops that argument.
         if os.name == "nt":
@@ -337,3 +346,30 @@ def test_shipped_hook_without_python_fails_without_continuing(tmp_path):
     result = run_shipped_hook(tmp_path, [])
     # Codex reports a failed hook; exit code 2 would instead continue the turn.
     assert result.returncode not in (0, 2)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="python3.X commands are a macOS / Linux convention")
+def test_shipped_hook_skips_an_old_python3_for_a_versioned_one(tmp_path):
+    result = run_shipped_hook(tmp_path, ["python3.11"], old=["python", "python3"])
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == b""
+
+
+def test_every_shipped_hook_tries_the_same_interpreters_in_order():
+    hooks = json.loads((ROOT / "hooks/hooks.json").read_text(encoding="utf-8"))["hooks"]
+    expected = [" ".join(interpreter) for interpreter in HOOK_INTERPRETERS]
+    for event, entries in hooks.items():
+        command = entries[0]["hooks"][0]["command"]
+        assert [part.split(" -c ")[0] for part in command.split(" || ")] == expected, event
+
+
+def test_unix_installer_accepts_the_same_versioned_pythons_as_the_hook():
+    script = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
+    listed = re.search(r'^versioned_pythons="([^"]*)"$', script, re.MULTILINE).group(1)
+    assert tuple(listed.split()) == VERSIONED_PYTHONS
+
+
+def test_unix_installer_braces_variables_next_to_non_ascii_text():
+    # macOS /bin/sh (bash 3.2) reads bytes of a following "…" or "，" as part of the name.
+    script = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
+    assert re.findall(r"\$[A-Za-z_]\w*(?=[^\x00-\x7f])", script, re.ASCII) == []

@@ -23,6 +23,11 @@ from .providers import CodexSuggestionProvider, ProviderUnavailable, choose_mode
 from .transcript import Message
 
 HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "Stop")
+# The hooks.json command tries these in order. Versioned commands, newest first, cover
+# hosts whose default python3 is older than 3.9 (Ubuntu 20.04, RHEL 8, openSUSE Leap 15)
+# but have a newer Python installed alongside it.
+VERSIONED_PYTHONS = tuple(f"python3.{minor}" for minor in range(15, 8, -1))
+HOOK_INTERPRETERS = (("python",), ("python3",), ("py", "-3"), *((n,) for n in VERSIONED_PYTHONS))
 
 
 def status(cfg: dict[str, Any]) -> str:
@@ -53,8 +58,8 @@ def status(cfg: dict[str, Any]) -> str:
 
 
 def hook_interpreter() -> tuple[str, str] | None:
-    """The interpreter the hook command will use: `python`, `python3`, else `py -3`."""
-    for name, *flags in (("python",), ("python3",), ("py", "-3")):
+    """The interpreter the hook command will use: the first of HOOK_INTERPRETERS with 3.9+."""
+    for name, *flags in HOOK_INTERPRETERS:
         executable = shutil.which(name)
         if not executable:
             continue
@@ -103,7 +108,8 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     rows.append(
         f"Hook Python         ✓ {interpreter[0]} {interpreter[1]}"
         if interpreter
-        else "Hook Python         ✗ no python, python3 or py -3 with 3.9+ on PATH (hook would fail)"
+        else "Hook Python         ✗ no python, python3, py -3 or python3.X with 3.9+ on PATH"
+        " (hook would fail)"
     )
     rows += [
         f"Plugin              {'✓' if valid else '✗'} bundle",

@@ -7,7 +7,7 @@ if os.environ.get("NEXTPROMPT_INTERNAL") == "1":
     raise SystemExit(0)
 
 # An unsupported interpreter exits 1 (never 2, which would continue the turn) so
-# the hook command can fall back from `python` to `python3`.
+# the hook command can fall back to the next interpreter it lists.
 if sys.version_info < (3, 9):  # noqa: UP036 - runtime guard for older interpreters
     raise SystemExit(1)
 

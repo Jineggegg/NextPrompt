@@ -6,6 +6,7 @@ description: Configure NextPrompt, turn automatic clipboard copy or desktop noti
 Locate this installed skill's absolute SKILL.md path. The plugin root is two
 directories above its containing directory. Run Python at `<plugin root>/scripts/nextprompt.py`.
 Use `python3` instead of `python` if `python` is unavailable, or `py -3` on Windows if neither works.
+If those are older than Python 3.9, use the newest `python3.X` command available (for example `python3.12`).
 Use `PLUGIN_DATA` if available. Otherwise the CLI derives the official legacy
 plugin data path for marketplace `nextprompt`; if installed through a different
 marketplace, pass `--data-dir` with its official plugin data directory before the command.
