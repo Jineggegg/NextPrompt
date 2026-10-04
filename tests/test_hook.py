@@ -367,3 +367,9 @@ def test_unix_installer_accepts_the_same_versioned_pythons_as_the_hook():
     script = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
     listed = re.search(r'^versioned_pythons="([^"]*)"$', script, re.MULTILINE).group(1)
     assert tuple(listed.split()) == VERSIONED_PYTHONS
+
+
+def test_unix_installer_braces_variables_next_to_non_ascii_text():
+    # macOS /bin/sh (bash 3.2) reads bytes of a following "…" or "，" as part of the name.
+    script = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
+    assert re.findall(r"\$[A-Za-z_]\w*(?=[^\x00-\x7f])", script, re.ASCII) == []

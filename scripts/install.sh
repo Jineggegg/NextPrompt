@@ -98,7 +98,7 @@ install_versioned() {
     install_command=$1
     shift
     for package in "$@"; do
-        echo "默认的 python3 低于 3.9，正在尝试安装 $package… / The default python3 is older than 3.9. Trying $package..."
+        echo "默认的 python3 低于 3.9，正在尝试安装 ${package}… / The default python3 is older than 3.9. Trying $package..."
         # shellcheck disable=SC2086 # $install_command is the package manager and its options.
         if as_root $install_command "$package" >/dev/null 2>&1; then
             hash -r 2>/dev/null || true
@@ -147,7 +147,7 @@ if ! find_python; then
     install_python
     if ! find_python; then
         if old=$(old_python); then
-            fail "只找到 $old，低于 3.9，也没能自动装上更新的 Python。请自行安装 Python 3.9 或更新版本（例如发行版的 python3.X 软件包、pyenv 或 Homebrew），然后重新运行本脚本。 / Only $old was found, which is older than 3.9, and no newer Python could be installed automatically. Install Python 3.9 or later yourself (for example your distribution's python3.X package, pyenv or Homebrew), then rerun this script."
+            fail "只找到 ${old}，低于 3.9，也没能自动装上更新的 Python。请自行安装 Python 3.9 或更新版本（例如发行版的 python3.X 软件包、pyenv 或 Homebrew），然后重新运行本脚本。 / Only $old was found, which is older than 3.9, and no newer Python could be installed automatically. Install Python 3.9 or later yourself (for example your distribution's python3.X package, pyenv or Homebrew), then rerun this script."
         fi
         fail "Python was installed, but no python3, python or python3.X command with 3.9+ is on PATH. Open a new terminal, then rerun this script."
     fi
