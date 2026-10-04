@@ -13,6 +13,8 @@
   environment prose. Identical prefixes also help server-side prompt caching.
 - The integration safety check now inspects tools sent inside Codex's
   `additional_tools` input item, which the previous check missed.
+- Windows: retry the settings lock while a previous lock file is still being deleted
+  ("access denied"), instead of failing concurrent settings updates.
 
 ## 0.1.7 — 2026-10-04
 
