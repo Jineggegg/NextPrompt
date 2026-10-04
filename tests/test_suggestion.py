@@ -55,10 +55,24 @@ def test_discard_invalid(raw):
 
 
 @pytest.mark.parametrize(
-    "text", ["运行完整测试并检查最终 diff。", "检查 CI 后创建 PR。", "Review the 🚀 release diff."]
+    "text",
+    [
+        "运行完整测试并检查最终 diff。",
+        "检查 CI 后创建 PR。",
+        "Review the 🚀 release diff.",
+        "运行全部测试",
+        "合并到主分支",
+        "テストを実行して",
+        "테스트 실행",
+    ],
 )
 def test_unicode_suggestion(text):
     assert sanitize(text) == text
+
+
+@pytest.mark.parametrize("text", ["继续", "继续工作。", "修复问题", "好的。", "Run it."])
+def test_short_or_generic_discarded_in_any_language(text):
+    assert sanitize(text) is None
 
 
 @pytest.mark.parametrize(

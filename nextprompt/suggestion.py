@@ -55,7 +55,11 @@ def sanitize(raw: str, max_words: int = 20, max_chars: int = 240) -> str | None:
         return None
     if not text or len(text) > min(240, max_chars) or len(text.split()) > min(20, max_words):
         return None
-    if len(text) < 8 or len(text.split()) < 3 and not re.search(r"[\u3400-\u9fff]", text):
+    # Chinese, Japanese and Korean pack a full instruction into few characters/spaces.
+    if re.search(r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]", text):
+        if len(text) < 4:
+            return None
+    elif len(text) < 8 or len(text.split()) < 3:
         return None
     if text.casefold().strip(" .!。！？") in GENERIC:
         return None

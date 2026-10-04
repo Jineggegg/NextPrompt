@@ -8,6 +8,8 @@ its containing directory). Run:
 
 `python "<plugin root>/scripts/nextprompt.py" enable`
 
+Use `python3` instead of `python` if `python` is unavailable.
+
 The CLI uses `PLUGIN_DATA` or the official data path for marketplace
 `nextprompt`. For a different marketplace supply its official `--data-dir`
 before the command. Enabling suggestions does not grant clipboard consent.

@@ -4,7 +4,7 @@ GitHub 交付目标是 `Jineggegg/NextPrompt` 私有仓库。仓库创建并推�
 使用仓库所有者的 GitHub 账号克隆。运行环境需要 Codex CLI 0.159.0+，
 并且 `codex exec --help` 必须具有
 `--ignore-user-config`、`--ignore-rules`、`--ephemeral`、`--disable`。运行时需要
-PATH 中的 `python` 为 Python 3.10+；不要把凭据写进 Git URL、脚本或项目文件。
+PATH 中有 Python 3.10+ 的 `python` 或 `python3`（Hook 会先试 `python`，再回退到 `python3`）；不要把凭据写进 Git URL、脚本或项目文件。
 
 ## 1. Windows 一键安装
 

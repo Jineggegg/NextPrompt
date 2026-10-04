@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.6 — 2026-10-04
+
+- Fall back from `python` to `python3` in the Stop Hook so stock macOS and Linux
+  (no `python` command) get suggestions instead of `hook: Stop Failed`. Interpreters
+  older than 3.10 exit 1, never 2, so the fallback cannot request a continuation.
+- Accept long Stop inputs up to 4 MiB; final answers over 64 KiB were silently skipped.
+- Keep short Chinese, Japanese and Korean suggestions such as `运行全部测试`.
+- Show the specific configuration error (stale lock, invalid or out-of-range
+  setting) instead of a generic message; Doctor reports an invalid config and still
+  runs its remaining checks.
+- Report the package version consistently, including to Codex's app-server.
+
 ## 0.1.5 — 2026-10-04
 
 - Unify repository, package, marketplace, installation commands and display

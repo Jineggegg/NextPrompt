@@ -13,6 +13,8 @@ directory). Call its CLI:
 
 `python "<plugin root>/scripts/nextprompt.py" suggest --context-stdin`
 
+Use `python3` instead of `python` if `python` is unavailable.
+
 Pass JSON on stdin with this shape:
 
 `{"messages":[{"role":"user","text":"Fix the login redirect."},{"role":"assistant","text":"Implemented the fix. Targeted tests pass."}]}`

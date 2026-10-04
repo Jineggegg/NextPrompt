@@ -69,6 +69,17 @@ def test_invalid_limits_do_not_corrupt_config(tmp_path, capsys):
     before = (tmp_path / "config.json").read_bytes()
     assert main([*args, "setup", "--context-messages", "20"]) == 1
     assert before == (tmp_path / "config.json").read_bytes()
+    assert "configuration error: setting exceeds V1 limits" in capsys.readouterr().out
+
+
+def test_doctor_reports_invalid_config_and_continues(tmp_path, capsys, doctor_provider):
+    (tmp_path / "config.json").write_text("{bad")
+    assert main(["--data-dir", str(tmp_path), "doctor"]) == 1
+    output = capsys.readouterr().out
+    assert "Config              ✗ invalid config" in output
+    assert "Repair or delete" in output
+    assert "Suggestion model    ✓" in output  # Remaining checks still run.
+    assert "Check configuration with nextprompt doctor" not in output
 
 
 @pytest.fixture

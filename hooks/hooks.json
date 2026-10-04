@@ -3,7 +3,7 @@
   "hooks": {
     "Stop": [{"hooks": [{
       "type": "command",
-      "command": "python -c \"import os,runpy;runpy.run_path(os.path.join(os.environ['PLUGIN_ROOT'],'hooks','stop.py'),run_name='__main__')\"",
+      "command": "python -c \"import os,runpy;runpy.run_path(os.path.join(os.environ['PLUGIN_ROOT'],'hooks','stop.py'),run_name='__main__')\" || python3 -c \"import os,runpy;runpy.run_path(os.path.join(os.environ['PLUGIN_ROOT'],'hooks','stop.py'),run_name='__main__')\"",
       "timeout": 20
     }]}]
   }

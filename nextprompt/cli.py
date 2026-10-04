@@ -7,12 +7,13 @@ import json
 import subprocess
 import sys
 import tempfile
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from .clipboard import SystemClipboardAdapter
-from .config import ConfigStore
+from .config import DEFAULTS, ConfigError, ConfigStore
 from .hook import generate_suggestion
 from .platform import detect_platform
 from .process import run_process
@@ -46,11 +47,18 @@ class DoctorReport:
 
 def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     rows = ["NextPrompt Doctor", "Python              ✓ " + sys.version.split()[0]]
-    cfg = store.load()
-    rows.append(
-        "Config              ✓ "
-        + ("configured" if store.path.exists() else "defaults ready (display only)")
-    )
+    try:
+        cfg = store.load()
+        config_ok = True
+        rows.append(
+            "Config              ✓ "
+            + ("configured" if store.path.exists() else "defaults ready (display only)")
+        )
+    except ConfigError as exc:
+        # Hooks skip an invalid config; check the remaining setup with defaults.
+        cfg, config_ok = deepcopy(DEFAULTS), False
+        rows.append(f"Config              ✗ {exc}")
+        rows.append("Action              Repair or delete NextPrompt config.json, then run setup.")
     root = Path(__file__).resolve().parents[1]
     try:
         manifest = json.loads((root / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
@@ -58,7 +66,7 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
         valid = manifest["name"] == "nextprompt" and set(hooks["hooks"]) == {"Stop"}
     except (OSError, ValueError, KeyError):
         valid = False
-    healthy = valid
+    healthy = valid and config_ok
     rows += [
         f"Plugin              {'✓' if valid else '✗'} bundle",
         f"Hook                {'✓' if valid else '✗'} Stop (review trust in /hooks)",
@@ -237,10 +245,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
         return run(args)
-    except (Exception, KeyboardInterrupt):
+    except (Exception, KeyboardInterrupt) as exc:
         if args.command == "suggest":
             return 0
-        print("NextPrompt unavailable. Check configuration with nextprompt doctor.")
+        if isinstance(exc, ConfigError):
+            # Fixed, content-free messages, e.g. a stale lock or out-of-range setting.
+            print(f"NextPrompt configuration error: {exc}.")
+        else:
+            print("NextPrompt unavailable. Check configuration with nextprompt doctor.")
         return 1
 
 

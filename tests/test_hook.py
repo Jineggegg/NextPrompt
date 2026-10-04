@@ -144,7 +144,7 @@ def test_missing_transcript_does_not_infer(configured, provider):
 
 @pytest.mark.parametrize(
     "input_bytes",
-    [b"", b"bad JSON", b"[]", b"x" * 70000],
+    [b"", b"bad JSON", b"[]", b"x" * (4 * 1024 * 1024 + 1)],
     ids=["empty", "malformed", "json-array", "oversized"],
 )
 def test_entrypoint_always_zero(tmp_path, input_bytes):
@@ -182,3 +182,80 @@ def test_hook_utf8_on_non_utf8_host(tmp_path):
     )
     assert result.returncode == 0 and result.stderr == b""
     assert json.loads(result.stdout)["systemMessage"] == "Next prompt:\n运行完整测试 🚀。"
+
+
+def run_entrypoint(tmp_path, payload, prelude=""):
+    launcher = (
+        "import sys,runpy; "
+        f"sys.path.insert(0, {str(ROOT)!r}); "
+        "import nextprompt.hook; "
+        "nextprompt.hook.handle_stop=lambda _: 'Next prompt:\\nRun the full suite.'; "
+        f"{prelude}"
+        f"runpy.run_path({str(ROOT / 'hooks/stop.py')!r}, run_name='__main__')"
+    )
+    return subprocess.run(
+        [sys.executable, "-c", launcher],
+        input=payload,
+        capture_output=True,
+        env={**os.environ, "PLUGIN_DATA": str(tmp_path)},
+        timeout=5,
+    )
+
+
+def test_long_final_answer_still_suggests(tmp_path):
+    # Codex includes last_assistant_message in the Stop input.
+    payload = json.dumps({**PAYLOAD, "last_assistant_message": "长" * 70000}).encode()
+    result = run_entrypoint(tmp_path, payload)
+    assert result.returncode == 0
+    assert json.loads(result.stdout)["systemMessage"] == "Next prompt:\nRun the full suite."
+
+
+def test_unsupported_python_exits_one_for_fallback(tmp_path):
+    # Exit 1 lets `python ... || python3 ...` try the next interpreter; never exit 2.
+    result = run_entrypoint(tmp_path, b"{}", prelude="sys.version_info = (3, 9, 18); ")
+    assert result.returncode == 1 and result.stdout == b""
+
+
+def shipped_hook_command():
+    hooks = json.loads((ROOT / "hooks/hooks.json").read_text(encoding="utf-8"))
+    return hooks["hooks"]["Stop"][0]["hooks"][0]["command"]
+
+
+def run_shipped_hook(tmp_path, interpreters):
+    """Run the real hooks.json command as Codex does, with only the given commands on PATH."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    for name in interpreters:
+        if os.name == "nt":
+            (bin_dir / f"{name}.cmd").write_text(f'@"{sys.executable}" %*\r\n')
+        else:
+            shim = bin_dir / name
+            shim.write_text(f'#!/bin/sh\nexec "{sys.executable}" "$@"\n')
+            shim.chmod(0o755)
+    env = {
+        **os.environ,
+        "PATH": str(bin_dir),
+        "PLUGIN_ROOT": str(ROOT),
+        "PLUGIN_DATA": str(tmp_path / "data"),
+    }
+    if os.name == "nt":
+        # Codex runs `%COMSPEC% /C "<command>"` on Windows.
+        comspec = os.environ.get("COMSPEC", "cmd.exe")
+        args = f'"{comspec}" /D /C "{shipped_hook_command()}"'
+    else:
+        # Codex runs `$SHELL -lc <command>`; /bin/sh covers the shared syntax.
+        args = ["/bin/sh", "-c", shipped_hook_command()]
+    return subprocess.run(args, input=b"[]", capture_output=True, env=env, cwd=tmp_path, timeout=10)
+
+
+@pytest.mark.parametrize("interpreters", [["python"], ["python3"]], ids=["python", "python3-only"])
+def test_shipped_hook_command_finds_an_interpreter(tmp_path, interpreters):
+    result = run_shipped_hook(tmp_path, interpreters)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == b""
+
+
+def test_shipped_hook_without_python_fails_without_continuing(tmp_path):
+    result = run_shipped_hook(tmp_path, [])
+    # Codex reports a failed hook; exit code 2 would instead continue the turn.
+    assert result.returncode not in (0, 2)

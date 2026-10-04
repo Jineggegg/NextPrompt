@@ -13,6 +13,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from . import __version__
+
 
 def kill_process(process: subprocess.Popen) -> None:
     if os.name == "posix":
@@ -130,7 +132,7 @@ def model_list_rpc(
             {
                 "id": 1,
                 "method": "initialize",
-                "params": {"clientInfo": {"name": "nextprompt", "version": "0.1.0"}},
+                "params": {"clientInfo": {"name": "nextprompt", "version": __version__}},
             }
         )
         reply(1)

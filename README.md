@@ -17,7 +17,7 @@ NextPrompt suggests one short next instruction after each Codex turn. Choose **Y
 - **Optional auto-copy**: Windows, WSL, macOS and common Linux desktops; display-only mode is also available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
-版本 / Version **0.1.5** · Python **3.10+** · Codex CLI **0.159+** · **MIT**
+版本 / Version **0.1.6** · Python **3.10+** · Codex CLI **0.159+** · **MIT**
 
 ## 安装 / Installation
 
@@ -49,9 +49,9 @@ When asked about clipboard copy, **Y enables auto-copy; N or Enter keeps display
 No separate setup is required. Use `$nextprompt-setup` to change preferences.
 For unattended installation, explicitly pass `-AutoCopy on` or `-AutoCopy off`.
 
-macOS / Linux 或手动安装（需已有可用的 `python` 与 Codex）：
+macOS / Linux 或手动安装（需已有 Python 3.10+ 的 `python` 或 `python3` 命令，以及 Codex）：
 
-macOS / Linux or manual installation (working `python` and Codex required):
+macOS / Linux or manual installation (Python 3.10+ as `python` or `python3`, plus Codex):
 
 ```sh
 gh repo clone Jineggegg/NextPrompt
