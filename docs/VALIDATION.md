@@ -35,9 +35,21 @@
   offered the step in prose instead of a line.
 - Limits: replies summarize fictional work, so a model sometimes asked for content instead
   of inventing it. Desktop rendering and the real clipboard were not exercised.
-- Tests: Windows, Python 3.12: 485 passed, 36 skipped. Linux (WSL), Python 3.14, with the
+- Real end to end (Linux / WSL, Codex CLI 0.160.0, `gpt-6-luna` high, Codex's own system
+  prompt and tools): the built plugin installed into an isolated `CODEX_HOME` with hooks
+  trusted for the run; a test-only wrapper logged hook input and output and auto-copy was
+  off. 5 real multi-turn sessions in copies of a small project with a failing test (a
+  three-chapter story, debugging with "先别改代码" then a side question, three subcommands
+  one at a time with a side question, an English README with one section dropped,
+  confirmations and venting), 2 runs, 44 turns, resumed with `codex exec resume`; pasted
+  turns sent exactly what the clipboard would hold. 43/44 turns matched expectations:
+  0/18 suggestions where none was right, 13/14 due ones copied (the miss: a diagnosis-only
+  reply offered no fix), every side question was followed by an offer to resume, and the
+  reminder's shape was followed in every line. Stats recorded 44 replies, 16 suggestions,
+  11 sent as is (exactly the 11 pasted turns), 5 not used, none left pending.
+- Tests: Windows, Python 3.12: 502 passed, 36 skipped. Linux (WSL), Python 3.14, with the
   real Codex CLI 0.160.0 and the local simulated model (`NEXTPROMPT_RUN_CLI_INTEGRATION=1`):
-  492 passed, 29 skipped; the integration cases confirm the reminder reaches the root
+  509 passed, 29 skipped; the integration cases confirm the reminder reaches the root
   request, a quoted line is copied with no extra request, and a reply without a line makes
   no extra request. Ruff check and format passed on both.
 
