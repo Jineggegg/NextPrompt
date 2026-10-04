@@ -37,9 +37,9 @@ Optional user-requested settings: `--enabled on|off`, `--model MODEL`,
 `--context-messages 1..5`, `--max-words 1..20`, `--redaction on|off`,
 `--osc52 on|off`, `--notify on|off` (desktop notification), `--trigger-mode every_turn|manual`,
 `--language auto|en|zh|zh-TW|ja|ko|es|fr|de|pt|ru` (labels; `auto` follows the
-user's latest message), `--source inline|model` (`inline`, the default: the Codex model ends each
-reply with a next-step line in the user's language (`Next prompt:`, `下一步建议：`, …)
-whose text is copied as is; `model`:
+user's latest message), `--source inline|model` (`inline`, the default: when a next step is
+worth it, the Codex model ends the reply with a varied `→` line quoting the user's next prompt
+(`→ 要不要「…」？`), and the quoted prompt is copied; `model`:
 no line in replies, a separate lightweight request instead; takes effect in new or
 resumed sessions). OSC 52 defaults off and is
 unverified best effort; clipboard contents can be read by other local applications.

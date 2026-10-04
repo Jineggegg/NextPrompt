@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+- Suggestions only when they help: the Codex model writes a suggestion line only for three
+  kinds of step: a part the user named or planned that is not done yet (the next chapter,
+  page or day, including parts left for later), finishing what this turn left unfinished or
+  only diagnosed, and resuming unfinished work after a side question. New ideas
+  (improvements, extra features, more checks), confirmations, answers, chatting, stopping
+  and wrapping up get no line. A reply without a line copies nothing and no longer starts
+  the fallback model (it still runs when Codex sends no reply text, and with
+  `--source model`).
+- Varied, natural wording: the line is the model's own sentence around one quoted prompt,
+  such as `→ 要不要「接着写第三章」？` or `→ One loose end: “fix the two failing tests”.`
+  Each UserPromptSubmit reminder proposes a wording shape, taken in turn per session (only
+  the shape position is stored), so two suggestions in a row never read alike. Shapes are
+  written for Chinese, Japanese, Korean and English; other languages follow the English
+  ones in their own words. Only the
+  quoted prompt is copied; Chinese prompts get a short go-ahead (`接着写第三章，做吧`, also
+  来吧 / 开始吧 / 动手吧).
+- The earlier `Next prompt:` / `下一步建议：` lines are still recognized. A closing offer
+  whose arrow was dropped (`顺手的话，可以「…」。`) or that ends the last paragraph still
+  counts; quotes in ordinary sentences or dialogue do not.
+- A question mark at the end of a story or blurb no longer blocks the copy when the reply
+  ends with a suggestion; explicit choices ("你想用哪个？", "Which branch…?") still do.
+- No need to re-trust the hooks: the hook commands are unchanged.
+
 ## 0.1.13 — 2026-10-04
 
 - Hosts whose default `python3` is older than 3.9 (Ubuntu 20.04, RHEL 8, openSUSE Leap 15)

@@ -1,5 +1,41 @@
 # Validation
 
+## Unreleased — 2026-10-04, suggestions only when useful, varied wording
+
+- Method: replay simulation through `codex exec` with the real `gpt-6-luna`. Every reply
+  went through the real Stop hook with a fake clipboard; the UserPromptSubmit reminder and
+  its per-session wording rotation came from the real hook. An independent judge
+  (`gpt-6-luna`, high reasoning) checked each turn against the suggestion policy, and every
+  flagged turn was reviewed by hand.
+- Tuning set: 40 single-turn scenarios and 8 multi-turn sessions (44 turns; the simulated
+  user pastes the copied suggestion when there is one): the reported case (confirming the
+  PDF holds both sides' prompts), Q&A, greetings, thanks, "stop", pausing until tomorrow, a
+  side question during unfinished work, sudden topic changes, sudden jumps or drops in
+  difficulty, an ambiguous request, options for the user to pick, a declined suggestion,
+  "no more suggestions", venting, read-only, no-deploy and waiting-for-approval limits,
+  steps only the user can take, a pasted API key, Traditional Chinese, English, Japanese
+  and Korean.
+- Held-out set: 14 scenarios and 2 sessions written after tuning, in other domains. One
+  held-out failure (a wrap-up with planned parts left still got a line) exposed a
+  regression from the last tuning change; it was fixed and the set rerun.
+- Before (0.1.13 instruction, medium reasoning, first 24 scenarios, 1 run): a line on
+  41/44 turns; 11/12 turns where no suggestion was right still got one (e.g.
+  "检查 PDF，确认提示词和回答都显示完整" right after the user asked exactly that); 3
+  suggestions crossed the scenario's limits.
+- After, high reasoning (the default this was tuned for): tuning set, 2 runs, 168 turns:
+  0/52 suggestions where none was right; 38/38 where one was due; none shown but not
+  copied, none out of bounds, no stray brackets, no wording used twice in a row within a
+  session; 22 wordings across 51 lines; judge 166/168 (both flags were advice in the reply
+  body, with no line). Held-out set, 3 runs, 69 turns: 0/27 wrong suggestions; 16/24 due
+  ones copied, and in the other 8 the model first asked for missing content or finished
+  every step in one turn, so no line was right; judge 68/69 (the flag was body text).
+- After, medium reasoning: held-out set, 3 runs: 1/27 wrong (a line after "停，方向错了"),
+  17/24 due ones copied, and a few optional lines were new ideas ("整合三页大纲"). On the
+  tuning set (2 runs, one revision earlier): 0/52 wrong, 34/38 due ones copied; the misses
+  offered the step in prose instead of a line.
+- Limits: replies summarize fictional work, so a model sometimes asked for content instead
+  of inventing it. Desktop rendering and the real clipboard were not exercised.
+
 ## v0.1.10 — 2026-10-04, one-time installation report
 
 - Windows Python 3.12: Ruff check and format check passed; the full local suite

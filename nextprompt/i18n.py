@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import zlib
 from collections.abc import Iterable
 
 MESSAGES: dict[str, dict[str, str]] = {
@@ -148,6 +149,25 @@ INLINE_LABELS: dict[str, str] = {
     "pt": "Próximo prompt:",
     "ru": "Следующий запрос:",
 }
+
+
+# Chinese suggestions are copied as the user's go-ahead: 「给 PDF 加目录」 → 给 PDF 加目录，做吧
+GO_AHEAD: dict[str, tuple[str, ...]] = {
+    "zh": ("做吧", "来吧", "开始吧", "动手吧"),
+    "zh-TW": ("做吧", "來吧", "開始吧", "動手吧"),
+}
+
+
+def go_ahead(prompt: str) -> str:
+    """Add a short go-ahead to a Chinese instruction; questions and other languages stay."""
+    endings = GO_AHEAD.get(detect_language(prompt))
+    core = prompt.rstrip(" 。.！!，,")
+    if not endings or not core or prompt.rstrip().endswith(("?", "？")):
+        return prompt
+    if core.endswith(("吧", "呗", "唄")):
+        return core
+    # Stable per prompt, varied across prompts.
+    return f"{core}，{endings[zlib.crc32(core.encode('utf-8')) % len(endings)]}"
 
 
 def resolve_language(setting: str, texts: Iterable[str]) -> str:
