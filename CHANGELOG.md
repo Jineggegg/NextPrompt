@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.13 — 2026-10-04
 
 - Hosts whose default `python3` is older than 3.9 (Ubuntu 20.04, RHEL 8, openSUSE Leap 15)
   now work when a newer Python is installed next to it: the hook command, Doctor and

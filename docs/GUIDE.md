@@ -2,7 +2,7 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 NextPrompt is the product, repository, package, plugin and marketplace name.
-Version: **0.1.12**. Runtime: Python 3.9+, standard library only.
+Version: **0.1.13**. Runtime: Python 3.9+, standard library only.
 
 **下一句，已经准备好了。** 每轮完成后，NextPrompt 为你准备一句简短的下一步提示词。
 安装时选择 **Y**，有效建议就会**自动复制到剪贴板**：按 **Ctrl+V**（macOS：**Cmd+V**），
