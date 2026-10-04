@@ -35,8 +35,8 @@ INLINE_REMINDER = (
     "or fixing what this turn left unfinished or only diagnosed, or resuming earlier unfinished "
     "work after a side question or small fix. First, if the user is stopping, pausing or "
     'wrapping up ("先这样吧", "that\'s all for now"), write no line, even with parts left. '
-    "Otherwise check whether the user named or planned parts (chapters, days, pages, steps) that are "
-    "still not done; if so, the line is due, also after long writing. New ideas, "
+    "Otherwise check whether the user named or planned parts (chapters, days, pages, steps) "
+    "that are still not done; if so, the line is due, also after long writing. New ideas, "
     "confirmations and answers get no line. "
     "Omit the line when this reply asks the user a question or waits for their choice. "
     "A line is the separate last line: it starts with `→ ` and quotes the user's next prompt "
