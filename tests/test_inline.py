@@ -239,3 +239,83 @@ def test_localized_line_reports_in_that_language(configured, clipboard):
     text = handle_stop(payload, store=configured, provider=Mock(), clipboard=clipboard)
     clipboard.copy.assert_called_once_with("ログアウトの回帰テストを追加して")
     assert text == "✓ クリップボードにコピーしました"
+
+
+# The reported loop: the assistant asks which task to do, the suggestion asks it back.
+QUESTION = "好的，我们一步一步来。你想先做哪个任务？"
+
+
+@pytest.mark.parametrize(
+    "last",
+    [
+        QUESTION + "\n\n下一步建议：下一步该做什么任务",
+        QUESTION,  # no line: the fallback model must not run either
+        "Done with step one.\nWhich option would you like: A or B?\n\nNext prompt: Pick option A",
+        "需要你确认一下。\n请告诉我要部署到哪个环境。",
+        "Before I start, please confirm the target branch.",
+    ],
+)
+def test_question_replies_copy_nothing_and_skip_the_fallback(configured, provider, clipboard, last):
+    configured.update(lambda cfg: cfg["clipboard"].update(auto_copy=True))
+    payload = {**PAYLOAD, "last_assistant_message": last}
+    text = handle_stop(
+        payload,
+        store=configured,
+        conversation=Mock(read=Mock(return_value=[Message("user", "帮我做个小任务")])),
+        provider=provider,
+        clipboard=clipboard,
+    )
+    assert text is None
+    provider.generate.assert_not_called()
+    clipboard.copy.assert_not_called()
+
+
+def test_question_rule_applies_in_model_mode_too(configured, provider, clipboard):
+    configured.update(lambda cfg: cfg.update(source="model"))
+    payload = {**PAYLOAD, "last_assistant_message": QUESTION}
+    assert handle_stop(payload, store=configured, provider=provider, clipboard=clipboard) is None
+    provider.generate.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "下一步建议：下一步该做什么任务",
+        "下一步建议：接下来做什么",
+        "下一步建议：有什么建议",
+        "下一步建议：继续",
+        "Next prompt: What should I do next?",
+        "Next prompt: what's next",
+        "次のプロンプト：次は何をすればいい？",
+    ],
+)
+def test_decision_returning_lines_are_not_copied(configured, provider, clipboard, line):
+    configured.update(lambda cfg: cfg["clipboard"].update(auto_copy=True))
+    payload = {**PAYLOAD, "last_assistant_message": reply(line)}
+    assert handle_stop(payload, store=configured, provider=provider, clipboard=clipboard) is None
+    provider.generate.assert_not_called()
+    clipboard.copy.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        # A suggestion that is itself a question is still the user's to ask.
+        ("下一步建议：为什么登录测试会失败？", "为什么登录测试会失败？"),
+        ("Next prompt: Explain what this function does", "Explain what this function does"),
+        ("下一步建议：解释一下这个函数做什么", "解释一下这个函数做什么"),
+    ],
+)
+def test_concrete_prompts_still_copy(configured, clipboard, line, expected):
+    configured.update(lambda cfg: cfg["clipboard"].update(auto_copy=True))
+    payload = {**PAYLOAD, "last_assistant_message": reply(line)}
+    handle_stop(payload, store=configured, provider=Mock(), clipboard=clipboard)
+    clipboard.copy.assert_called_once_with(expected)
+
+
+def test_instructions_cover_questions_typos_and_loops():
+    inline = INLINE_PATH.read_text(encoding="utf-8")
+    assert "asks the user a question" in inline and "omit the line" in inline
+    assert "Fix the user's typos" in inline
+    assert "下一步该做什么任务" in inline
+    assert "Omit the line when this reply asks the user a question" in INLINE_REMINDER
