@@ -1,5 +1,18 @@
 # Validation
 
+## v0.1.9 — 2026-10-04, next-step line in every reply by default
+
+- Codex source (openai/codex at the time of writing): plugin hooks load like any other
+  hook; plain stdout from SessionStart and UserPromptSubmit is recorded as a developer
+  message for the root model (`core/src/hook_runtime.rs`, `record_additional_contexts`),
+  and SessionStart fires again after compaction. Stop input includes `last_assistant_message`.
+- Real Codex CLI 0.160.0 with the local simulated model (`NEXTPROMPT_RUN_CLI_INTEGRATION=1`,
+  7 passed): the root request carried both the SessionStart instruction and the
+  UserPromptSubmit reminder; with a reply ending in `Next prompt: …` the Stop Hook made no
+  suggestion request; replies without the line still made exactly one fallback request.
+- Whether a real model writes the line on every turn was not measured here; the fallback
+  covers replies that omit it.
+
 ## v0.1.8 — 2026-10-04, default auto-copy, notifications, slimmer requests
 
 - Real child request captured from Codex 0.160.0 and 0.159.0: 14,285 → 8,768 bytes.

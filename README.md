@@ -2,24 +2,26 @@
 
 下一句，已经准备好了。 · Your next prompt, ready to paste.
 
-NextPrompt 在 Codex 每轮回答完成后，生成一句贴合当前对话的下一步提示词。
-安装时选择 **Y**，建议就会**自动复制到剪贴板**，按 **Ctrl+V**（macOS：**Cmd+V**）即可继续。
+NextPrompt 让 Codex 每次回答的最后一行都写上下一步建议（中文为 `下一步建议：…`，英文为 `Next prompt: …`），
+并把冒号后面的内容**原样复制到剪贴板**，按 **Ctrl+V**（macOS：**Cmd+V**）即可继续。
 
-- **几秒就绪**：15 轮真实模型测试中，11 轮为 3–5 秒，平均 4.37 秒。
-- **轻量开销**：只取最近 5 条消息，使用轻量模型和 `low` 思考，输出一句简短建议；Codex 检查结果缓存 12 小时，每轮少启动 3 次 Codex。
+- **回答结束即就绪**：建议由 Codex 当前模型顺手写出，不再另外请求模型，也能看到完整对话。
+- **剪贴板与回答一致**：剪贴板里就是建议行冒号后面的文字，不做改写；含疑似密钥时不复制。
+- **自动兜底**：某次回答没写建议行时，改用轻量模型（`low` 思考、最近 5 条消息）生成一句。
 - **多语言**：用你的语言给建议；提示文字跟随你最近的消息切换，支持 中文（简体/繁體）、日本語、한국어、English、Español、Français、Deutsch、Português、Русский。
 - **自动复制 + 通知**：默认开启，建议一准备好就复制到剪贴板并弹出系统通知，看到通知即可粘贴；支持 Windows、WSL、macOS 和常见 Linux 桌面，也可以改为仅展示。
 - **由你决定发送**：不会自动提交或执行建议。
 
-NextPrompt suggests one short next instruction after each Codex turn. Choose **Y** during installation to **automatically copy suggestions to your clipboard**, then paste with **Ctrl+V** (**Cmd+V** on macOS).
+NextPrompt makes every Codex reply end with a next-step line (`Next prompt: …`, or `下一步建议：…` in Chinese) and **copies the text after the colon to your clipboard exactly as shown**, so you can paste with **Ctrl+V** (**Cmd+V** on macOS).
 
-- **Ready in seconds**: 11 of 15 measured turns took 3–5 seconds; average 4.37 seconds.
-- **Lightweight**: the last 5 messages, a lightweight model with `low` reasoning, and one short suggestion; Codex checks are cached for 12 hours, saving three Codex startups per turn.
+- **Ready when the reply ends**: your Codex model writes the suggestion itself, with the whole conversation in view and no extra model request.
+- **Clipboard matches the reply**: the copied text is the line's text, unchanged; lines that look like they contain a secret are not copied.
+- **Automatic fallback**: if a reply has no such line, a lightweight model (`low` reasoning, last 5 messages) writes one.
 - **Multilingual**: suggestions come in your language, and labels follow your latest message: 中文（简体/繁體）、日本語、한국어、English、Español、Français、Deutsch、Português、Русский.
 - **Auto-copy + notification by default**: each suggestion is copied and announced with a desktop notification, so you know when to paste; Windows, WSL, macOS and common Linux desktops. Display-only mode is available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
-版本 / Version **0.1.8** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
+版本 / Version **0.1.9** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
 
 ## 安装 / Installation
 
@@ -40,7 +42,7 @@ When asked about clipboard copy, **Y or Enter enables auto-copy (default); N kee
 安装结束后 / After installation:
 
 1. 完全退出并重新打开 Codex。 / Quit and reopen Codex.
-2. 打开 `/hooks`，检查并信任 NextPrompt 的 SessionStart 和 Stop Hook。 / Open `/hooks`, review and trust the NextPrompt SessionStart and Stop Hooks.
+2. 打开 `/hooks`，检查并信任 NextPrompt 的 SessionStart、UserPromptSubmit 和 Stop Hook。 / Open `/hooks`, review and trust the NextPrompt SessionStart, UserPromptSubmit and Stop Hooks.
 3. 完成一轮普通对话；生成建议后，粘贴、检查，再发送。 / Complete a normal turn, then paste, review and send the suggestion.
 
 不需要另行运行 setup。想修改偏好时使用 `$nextprompt-setup`。
@@ -66,34 +68,35 @@ Restart Codex and trust the Hook here too. Manual installation also copies and n
 
 ## 显示示例 / What you see
 
-用中文对话并开启自动复制时 / A Chinese conversation with auto-copy enabled:
+用中文对话时，Codex 回答的最后一行 / The last line of a Codex reply in a Chinese conversation:
 
 ```text
-下一句 → 运行完整回归测试，检查最终改动。
+下一步建议：运行完整回归测试，检查最终改动。
+```
+
+Hook 随后提示 / The Hook then reports:
+
+```text
 ✓ 已复制到剪贴板
 ```
 
-用英文对话、仅展示时 / An English conversation in display-only mode:
+剪贴板里是 `运行完整回归测试，检查最终改动。`，与这一行冒号后的文字完全相同；复制失败时可手动复制。
+回答没写建议行、改由轻量模型兜底时，Hook 会显示 `下一句 → …` 并复制同一句。想固定界面语言，用 `$nextprompt-setup` 设置 `--language`（如 `zh`、`en`、`ja`）。
 
-```text
-Next prompt:
-Run the full regression suite and review the final diff.
-```
+The clipboard holds exactly the text after the colon. If copying fails, copy it manually. When the lightweight fallback writes the suggestion, the Hook shows `Next → …` and copies that same sentence. To pin the label language, set `--language` (for example `zh`, `en`, `ja`) with `$nextprompt-setup`.
 
-剪贴板里只有建议正文；复制失败时保留建议供手动复制。想固定界面语言，用 `$nextprompt-setup` 设置 `--language`（如 `zh`、`en`、`ja`）。
+## 工作方式 / How it works
 
-Only the suggestion text is copied; if copying fails, the suggestion stays on screen to copy manually. To pin the label language, set `--language` (for example `zh`, `en`, `ja`) with `$nextprompt-setup`.
+会话开始（以及对话压缩后）时，SessionStart Hook 给 Codex 当前模型一段说明；你每发一条消息，UserPromptSubmit Hook
+再提醒一行，要求回答最后一行写建议。回答结束时 Stop Hook 读取这一行并复制。这是给模型的指令，绝大多数回答会照做，
+个别没写时由轻量模型兜底。建议行会占用主模型少量输出。想回到旧方式（不在回答里写、单独请求轻量模型），用
+`$nextprompt-setup` 设置 `--source model`。
 
-## 由当前模型直接写建议（可选）/ Let your Codex model write it (optional)
-
-`$nextprompt-setup` 设置 `--source inline` 后，NextPrompt 在会话开始时请 Codex 当前模型在每次回答最后加一行
-`Next prompt: …`，回答结束时 Hook 直接把这一行复制到剪贴板，不再另外请求轻量模型，几乎没有等待，也能看到完整对话。
-这行会出现在回答里，并占用主模型少量输出；某次回答没写这一行时，自动退回到轻量模型生成。默认仍是 `--source model`。
-
-With `--source inline`, NextPrompt asks your Codex model at session start to end each reply with a
-`Next prompt: …` line; the Stop Hook copies that line with no separate model request, so there is almost no wait
-and the suggestion sees the whole conversation. The line stays visible in the reply and uses a few output tokens;
-when a reply has no such line, NextPrompt falls back to the lightweight model. The default remains `--source model`.
+At session start (and after compaction) a SessionStart Hook gives your Codex model a short instruction, and a
+UserPromptSubmit Hook repeats a one-line reminder with each message, so every reply ends with the suggestion line.
+The Stop Hook reads that line and copies it. It is an instruction to the model, not a hard guarantee; replies
+without the line use the lightweight fallback. The line costs the root model a few output tokens. To go back to
+the previous behavior (no line in replies, a separate lightweight request), set `--source model` with `$nextprompt-setup`.
 
 ## 常用命令 / Commands
 

@@ -1,4 +1,4 @@
-"""SessionStart entrypoint: in inline mode, print the instruction the root model follows."""
+"""SessionStart / UserPromptSubmit entrypoint: inline-mode context for the root model."""
 
 import os
 import sys
@@ -18,13 +18,13 @@ try:
 
     sys.dont_write_bytecode = True
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from nextprompt.hook import handle_session_start
+    from nextprompt.hook import handle_context
 
     raw = sys.stdin.buffer.read(MAX_PAYLOAD + 1)
     if len(raw) <= MAX_PAYLOAD:
-        text = handle_session_start(json.loads(raw))
+        text = handle_context(json.loads(raw))
         if text:
-            # Plain stdout from SessionStart becomes developer context for the root model.
+            # Plain stdout from these events becomes developer context for the root model.
             sys.stdout.buffer.write((text + "\n").encode("utf-8"))
 except Exception:
     pass

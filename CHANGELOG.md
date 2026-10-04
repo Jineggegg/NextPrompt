@@ -1,11 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.1.9 — 2026-10-04
 
-- Optional inline mode (`setup --source inline`): a SessionStart Hook asks the Codex model
-  to end each reply with a `Next prompt:` line, and the Stop Hook copies that line without
-  a separate model request. Replies without a usable line fall back to the lightweight
-  model. The default stays `--source model`.
+- Every Codex reply now ends with a next-step line by default (`Next prompt: …`, or
+  `下一步建议：…` in Chinese conversations), and the text after the colon is copied to
+  the clipboard exactly as shown, with no separate model request. A SessionStart Hook
+  (also after compaction) gives the instruction and a new UserPromptSubmit Hook repeats a
+  one-line reminder each turn. Lines that look like they contain a secret, contain
+  control characters or exceed 500 characters are not copied.
+- Replies without the line fall back to the lightweight model, as before.
+  `setup --source model` restores the previous behavior (no line in replies).
+- Re-trust the hooks in `/hooks` after updating: two hook events are new.
 
 ## 0.1.8 — 2026-10-04
 
