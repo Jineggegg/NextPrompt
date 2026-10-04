@@ -136,7 +136,7 @@ def test_doctor_failure_is_not_reported_as_success():
     assert "installed successfully" not in result["output"]
 
 
-@pytest.mark.parametrize("answer", ["y", "Y", "yes", " YES "])
+@pytest.mark.parametrize("answer", ["y", "Y", "yes", " YES ", ""])
 def test_yes_saves_consent_and_reports_automatic_copy(answer):
     result = run_installer(answers=[answer])
     assert result["success"]
@@ -146,8 +146,8 @@ def test_yes_saves_consent_and_reports_automatic_copy(answer):
     assert "Automatic clipboard copy: OFF" not in result["output"]
 
 
-@pytest.mark.parametrize("answer", ["n", "N", "no", ""])
-def test_no_or_empty_answer_saves_display_only(answer):
+@pytest.mark.parametrize("answer", ["n", "N", "no", " NO "])
+def test_no_answer_saves_display_only(answer):
     result = run_installer(answers=[answer])
     assert result["success"]
     assert result["config"]["clipboard"]["auto_copy"] is False

@@ -16,7 +16,9 @@ Run the opt-in real CLI suite on POSIX with Codex installed:
 NEXTPROMPT_RUN_CLI_INTEGRATION=1 python -m pytest -q
 ```
 
-This uses a local simulated Responses service and a disposable Codex home. It does
+This uses a local simulated Responses service and a disposable Codex home. On a
+desktop machine the first-run Hook case copies one synthetic suggestion to your real
+clipboard and may show one notification, because both are on by default. It does
 not prove account access or cost. For real platform clipboard validation, record
 OS/backend versions, test exact English/Chinese/emoji/multiline round trips, and
 restore the previous clipboard if safe. Mark only actually verified machines Tested.

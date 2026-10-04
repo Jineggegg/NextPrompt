@@ -282,6 +282,7 @@ class CodexSuggestionProvider(SuggestionProvider):
             "sleep_tool",
             "tool_suggest",
             "unbounded_connection_retries",
+            "goals",
         ):
             args += ["--disable", feature]
         overrides = {
@@ -293,6 +294,10 @@ class CodexSuggestionProvider(SuggestionProvider):
             "skills.include_instructions": False,
             "features.skip_host_skill_discovery": True,
             "tools.update_plan.enabled": False,
+            "tools.experimental_request_user_input.enabled": False,
+            # Smaller, identical request prefixes: faster input and better prompt caching.
+            "include_permissions_instructions": False,
+            "include_environment_context": False,
             "analytics.enabled": False,
             "otel.exporter": "none",
             "otel.trace_exporter": "none",

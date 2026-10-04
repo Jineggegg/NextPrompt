@@ -6,10 +6,10 @@ import pytest
 from nextprompt.config import ConfigError, ConfigStore, data_directory, validate_config
 
 
-def test_defaults_do_not_grant_consent_or_write(tmp_path):
+def test_defaults_copy_and_notify_without_writing(tmp_path):
     store = ConfigStore(tmp_path / "absent")
     cfg = store.load()
-    assert cfg["enabled"] and cfg["clipboard"]["auto_copy"] is False
+    assert cfg["enabled"] and cfg["clipboard"]["auto_copy"] is True and cfg["notify"] is True
     assert not store.root.exists()
 
 
@@ -34,6 +34,7 @@ def test_defaults_do_not_grant_consent_or_write(tmp_path):
         {"privacy": {"redact_secrets": "yes"}},
         {"clipboard": []},
         {"language": "klingon"},
+        {"notify": "yes"},
         {"language": None},
     ],
 )

@@ -1,5 +1,17 @@
 # Validation
 
+## v0.1.8 — 2026-10-04, default auto-copy, notifications, slimmer requests
+
+- Real child request captured from Codex 0.160.0 and 0.159.0: 14,285 → 8,768 bytes.
+  Remaining tools: code-mode `exec`/`wait` only (forced by the model catalog; with the
+  shell disabled they have no file or network access). `request_user_input` removed.
+- Local Codex startup plus request (simulated model): 0.20–0.43 s; the rest of the
+  user-visible delay is remote model time, which was not re-measured.
+- A Stop-time probe over three real Codex turns showed the transcript already contains
+  the latest user message and reply when the Hook runs.
+- Notifications are unit-tested per platform (argument/environment passing, detached
+  launch, silent failure); a real desktop notification was not observed here.
+
 ## v0.1.7 — 2026-10-04, macOS-bundled Python 3.9
 
 - User report on 0.1.6: first turn showed `hook: Stop Failed` and no suggestion.

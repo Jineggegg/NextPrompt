@@ -153,6 +153,23 @@ def real_cli(tmp_path, monkeypatch):
         thread.join(timeout=2)
 
 
+def tool_names(request):
+    """Every tool the child model could call, including code-mode nested tools."""
+    names = set()
+
+    def walk(tools, prefix=""):
+        for tool in tools:
+            name = prefix + str(tool.get("name") or tool.get("type"))
+            names.add(name)
+            walk(tool.get("tools", []), name + ".")
+
+    walk(request.get("tools", []))
+    for item in request.get("input", []):
+        if isinstance(item, dict) and item.get("type") == "additional_tools":
+            walk(item.get("tools", []))
+    return names
+
+
 def command(args, cwd):
     return subprocess.run(
         ["codex", *args], capture_output=True, text=True, cwd=cwd, timeout=30, check=False
@@ -192,16 +209,11 @@ def test_real_provider_one_short_output_no_transcript(real_cli):
     request = real_cli["requests"][0]
     assert request["model"] == "gpt-5.6-luna"
     assert request.get("reasoning", {}).get("effort") == "low"
-    tool_json = json.dumps(request.get("tools", []))
-    for forbidden in (
-        "exec_command",
-        "shell_command",
-        "web_search",
-        "browser",
-        "mcp__",
-        "apply_patch",
-    ):
-        assert forbidden not in tool_json
+    # Codex 0.159+ also sends tools inside an `additional_tools` input item.
+    assert tool_names(request) <= {"functions", "functions.exec", "functions.wait"}
+    text = json.dumps(request["input"], ensure_ascii=False)
+    assert "<environment_context>" not in text and "<permissions instructions>" not in text
+    assert len(json.dumps(request)) < 10000  # Slim request: no goals or sandbox prose.
 
 
 def test_real_provider_falls_back_after_model_rejection(real_cli):
@@ -267,8 +279,13 @@ def test_real_stop_hook_one_child_no_recursive_turn(real_cli, tmp_path, monkeypa
     rollouts = list(real_cli["home"].rglob("rollout-*.jsonl"))
     # The only persistent transcript belongs to the test's root Codex, not NextPrompt.
     assert len(rollouts) == 1
-    output = json.loads(receipt.read_bytes())
-    assert output == {"systemMessage": "Next prompt:\n" + prompt}
+    output = json.loads(receipt.read_bytes())["systemMessage"].split("\n")
+    # Auto-copy is the default; headless hosts report a manual-copy fallback.
+    assert output[0] == "Next → " + prompt
+    assert output[1] in (
+        "✓ Copied to clipboard",
+        "Clipboard unavailable — copy the prompt above manually.",
+    )
     assert store.root == real_cli["home"] / "plugins/data/nextprompt-nextprompt"
 
 

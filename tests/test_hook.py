@@ -83,24 +83,54 @@ def test_clipboard_exception_still_displays(configured, provider, clipboard):
 
 
 @pytest.mark.parametrize("legacy_unset", [False, True])
-def test_first_run_displays_without_setup_or_clipboard(tmp_path, provider, clipboard, legacy_unset):
+def test_first_run_copies_and_notifies_without_setup(
+    tmp_path, provider, clipboard, notifications, legacy_unset
+):
     store = ConfigStore(tmp_path)
     if legacy_unset:
         store.update(lambda cfg: cfg["clipboard"].update(auto_copy=None))
     adapter = conversation()
-    assert (
-        handle_stop(
-            PAYLOAD, store=store, conversation=adapter, provider=provider, clipboard=clipboard
-        )
-        == "Next prompt:\nRun the full regression suite and review the final diff."
+    text = handle_stop(
+        PAYLOAD, store=store, conversation=adapter, provider=provider, clipboard=clipboard
     )
-    assert store.load()["clipboard"]["auto_copy"] is (None if legacy_unset else False)
+    suggestion = "Run the full regression suite and review the final diff."
+    assert text == f"Next → {suggestion}\n✓ Copied to clipboard"
     assert store.path.exists() is legacy_unset
-    adapter.read.assert_called_once()
-    provider.generate.assert_called_once()
-    clipboard.available.assert_not_called()
-    clipboard.copy.assert_not_called()
+    clipboard.copy.assert_called_once_with(suggestion)
+    notifications.assert_called_once_with("Next prompt copied", suggestion)
     assert not (tmp_path / ".setup-notice").exists()
+
+
+def test_display_only_still_notifies_with_suggestion(configured, provider, notifications):
+    handle_stop(PAYLOAD, store=configured, conversation=conversation(), provider=provider)
+    notifications.assert_called_once_with(
+        "Next prompt", "Run the full regression suite and review the final diff."
+    )
+
+
+def test_notifications_can_be_turned_off(configured, provider, notifications):
+    configured.update(lambda cfg: cfg.update(notify=False))
+    assert handle_stop(PAYLOAD, store=configured, conversation=conversation(), provider=provider)
+    notifications.assert_not_called()
+
+
+def test_notification_failure_never_hides_the_suggestion(configured, provider, notifications):
+    notifications.side_effect = RuntimeError("DO NOT LOG")
+    text = handle_stop(PAYLOAD, store=configured, conversation=conversation(), provider=provider)
+    assert text == "Next prompt:\nRun the full regression suite and review the final diff."
+
+
+def test_chinese_notification(configured, provider, clipboard, notifications):
+    configured.update(lambda cfg: cfg["clipboard"].update(auto_copy=True))
+    provider.generate.return_value = "运行完整回归测试，检查最终改动。"
+    handle_stop(
+        PAYLOAD,
+        store=configured,
+        conversation=chinese_conversation(),
+        provider=provider,
+        clipboard=clipboard,
+    )
+    notifications.assert_called_once_with("下一句已复制", "运行完整回归测试，检查最终改动。")
 
 
 @pytest.mark.parametrize(

@@ -20,7 +20,8 @@ DEFAULTS: dict[str, Any] = {
     "enabled": True,
     "trigger_mode": "every_turn",
     "language": "auto",
-    "clipboard": {"auto_copy": False, "osc52_fallback": False},
+    "clipboard": {"auto_copy": True, "osc52_fallback": False},
+    "notify": True,
     "context": {"last_messages": 5, "max_chars_per_message": 2500, "max_total_chars": 8000},
     "model": {"name": "gpt-5.6-luna", "reasoning": "low", "timeout_seconds": 15},
     "suggestion": {"max_words": 20, "max_chars": 240},
@@ -61,6 +62,7 @@ def validate_config(raw: object) -> dict[str, Any]:
         raise ConfigError("unsupported version")
     for value in (
         cfg["enabled"],
+        cfg["notify"],
         cfg["privacy"]["redact_secrets"],
         cfg["clipboard"]["osc52_fallback"],
     ):

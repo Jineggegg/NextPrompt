@@ -13,6 +13,14 @@ def isolate_environment(monkeypatch):
     monkeypatch.delenv("NEXTPROMPT_INTERNAL", raising=False)
 
 
+@pytest.fixture(autouse=True)
+def notifications(monkeypatch):
+    """Record desktop notifications instead of showing them."""
+    sent = Mock(return_value=True)
+    monkeypatch.setattr("nextprompt.hook.send_notification", sent)
+    return sent
+
+
 @pytest.fixture
 def configured(tmp_path):
     store = ConfigStore(tmp_path / "data")

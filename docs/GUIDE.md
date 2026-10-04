@@ -2,7 +2,7 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 NextPrompt is the product, repository, package, plugin and marketplace name.
-Version: **0.1.7**. Runtime: Python 3.9+, standard library only.
+Version: **0.1.8**. Runtime: Python 3.9+, standard library only.
 
 **下一句，已经准备好了。** 每轮完成后，NextPrompt 为你准备一句简短的下一步提示词。
 安装时选择 **Y**，有效建议就会**自动复制到剪贴板**：按 **Ctrl+V**（macOS：**Cmd+V**），
@@ -14,7 +14,7 @@ Version: **0.1.7**. Runtime: Python 3.9+, standard library only.
   配合 `low` 思考，只生成一句建议（最多 20 个词、240 字符）。独立请求仍会消耗额度；
   完整输入、输出与思考 token 尚未计量，不能据此保证“几乎零消耗”。
 - **自动加入剪贴板，直接粘贴继续。** 安装选择 Y 后会保存偏好，并在结束报告中确认已开启。
-  选择 N 或直接回车则仅显示建议；可随时通过 `$nextprompt-setup` 切换。
+  默认开启（直接回车即可），建议就绪时还会弹出系统通知；选择 N 则仅显示建议，可随时通过 `$nextprompt-setup` 切换。
 
 **Your next instruction, ready to paste.** Opt into automatic clipboard copy during installation,
 then paste, review and send. Most of our 15 measured synthetic turns took **3–5 seconds**
@@ -29,7 +29,7 @@ Run the full regression suite and review the final diff.
 ```
 
 Codex's actual TUI adds its own `↳ Hook ·` prefix and indentation. The example shows
-NextPrompt's default display-only text, not a custom component. Copy and review the
+NextPrompt's display-only text, not a custom component. Copy and review the
 suggestion before using it. With optional Auto Copy enabled, paste with Ctrl+V
 (Cmd+V on macOS), review, then press Enter yourself.
 **NextPrompt never submits or executes the suggestion.**
@@ -46,8 +46,8 @@ one short suggestion or nothing when the response is invalid or unhelpful.
 - Last 5 visible user/assistant messages, 2500 characters per message, 8000 total.
 - Common credential redaction before clipping or inference.
 - Account model discovery, conservative lightweight runtime fallback, `low` reasoning by default.
-- Automatically copy valid suggestions to the clipboard after explicit opt-in during installation;
-  display-only mode and manual-copy fallback are also available.
+- Automatically copy valid suggestions to the clipboard (on by default) and show a desktop
+  notification when each one is ready; display-only mode and manual-copy fallback are available.
 - Windows, WSL, macOS, Wayland and X11 clipboard adapters; optional OSC 52.
 - No automatic execution, repository scan, transcript database or NextPrompt telemetry.
 - Setup, status, enable, disable, manual suggestion and doctor skills.
@@ -99,7 +99,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 The script verifies `codex`, installs Python 3.12 through the official `winget`
 source when required, refreshes the current process PATH, registers the marketplace,
 installs the plugin, runs Doctor and asks Y/N about automatic clipboard copy.
-Y enables automatic copy; N or an empty answer selects display only. The choice
+Y or an empty answer enables automatic copy (default); N selects display only. The choice
 is saved and clearly reported at completion; other existing settings are preserved.
 For unattended installation, pass `-AutoCopy on` or `-AutoCopy off` explicitly.
 Add `-Probe` to perform a synthetic inference
@@ -142,7 +142,7 @@ checks.
 ## After installation: no setup required for suggestions
 
 Setup is not a prerequisite and is not specific to the repository owner. New
-installations default to **display only**, with automatic clipboard copy off.
+installations **copy each suggestion automatically and show a desktop notification**.
 The Windows installer asks for the clipboard preference and updates only that
 chosen setting; manual installs preserve existing settings. After loading the plugin
 and trusting its Hook,
@@ -153,16 +153,17 @@ After Doctor passes, the Windows installer asks:
 ```text
 NextPrompt clipboard preference
 Automatically copy suggested next prompts to your clipboard?
-Y = automatic copy; N = display only (default).
+Y = automatic copy (default); N = display only.
 Other local applications may read clipboard contents.
-Choose Y or N [N]:
+Choose Y or N [Y]:
 ```
 
-If you enter **Y**, the completion guide includes:
+If you enter **Y** or press Enter, the completion guide includes:
 
 ```text
 NextPrompt installed successfully.
 Automatic clipboard copy: ON. New suggestions will be copied automatically.
+A desktop notification shows each suggestion when it is ready to paste.
 Your clipboard choice has been saved. Other existing settings are preserved.
 No additional setup is required.
 
@@ -180,14 +181,14 @@ Help: run $nextprompt-status or $nextprompt-doctor.
 If /hooks is unavailable, use a supported Codex client/CLI; automatic suggestions are not verified until the hook loads and is trusted.
 ```
 
-If you enter **N** or press Enter, the mode line instead reads:
+If you enter **N**, the mode line instead reads:
 
 ```text
 Automatic clipboard copy: OFF. Suggestions will be displayed only.
 ```
 
-An unavailable interactive terminal stops with guidance to use `-AutoCopy on|off`;
-it never silently enables copying. If saving the preference fails, no successful
+An unavailable interactive terminal stops with guidance to use `-AutoCopy on|off`.
+If saving the preference fails, no successful
 installation report is printed. Enabling copy does not copy anything at installation:
 copying occurs only for valid suggestions after completed turns, once the Hook loads
 and is trusted. A missing clipboard backend is reported by the suggestion output;
@@ -202,18 +203,18 @@ Generic or repeated suggestions may be discarded; output is not guaranteed every
 
 ## Optional setup: clipboard copy or custom settings
 
-Only if you want automatic clipboard copy or different settings, invoke
+Only if you want to turn clipboard copy or notifications off, or change other settings, invoke
 **`$nextprompt-setup`** in Codex or say **“Configure NextPrompt.”** A general setup asks:
 
 ```text
 NextPrompt Setup
 Automatically copy suggested next prompts to your clipboard?
-Default: No (display only)
+Default: Yes
 1. Yes — automatically copy suggestions
 2. No  — display suggestions only
 ```
 
-Only an explicit Yes enables copying. An absent answer never enables it. Requests
+An empty answer keeps the default (Yes). Requests
 to change only a model or another setting preserve clipboard behavior and do not
 ask an unrelated clipboard question. You can also configure explicitly from the checkout:
 
@@ -221,7 +222,13 @@ ask an unrelated clipboard question. You can also configure explicitly from the 
 python scripts/nextprompt.py setup --auto-copy on
 # Or display only:
 python scripts/nextprompt.py setup --auto-copy off
+# Turn desktop notifications off (or back on):
+python scripts/nextprompt.py setup --notify off
 ```
+
+On macOS the notification comes from AppleScript (Script Editor); allow notifications
+for it in System Settings → Notifications if none appear. Windows uses a standard toast
+and Linux desktops use `notify-send` when installed. Headless/SSH sessions skip it.
 
 In the TUI's `$` skill picker, plugin skill names may be displayed with the
 `nextprompt:` namespace. Select the installed skill if the bare name is ambiguous.
@@ -367,7 +374,8 @@ Defaults:
   "enabled": true,
   "trigger_mode": "every_turn",
   "language": "auto",
-  "clipboard": {"auto_copy": false, "osc52_fallback": false},
+  "notify": true,
+  "clipboard": {"auto_copy": true, "osc52_fallback": false},
   "context": {
     "last_messages": 5,
     "max_chars_per_message": 2500,
@@ -379,8 +387,9 @@ Defaults:
 }
 ```
 
-`auto_copy: false` is the display-only default; legacy `null` also means display
-only without blocking inference. Only explicit `true` enables copying. These context,
+`auto_copy: true` (the default) copies each suggestion; `false` is display-only, and a
+legacy `null` follows the default. `notify: true` (the default) shows a desktop
+notification after copying. These context,
 word and character limits are hard V1 ceilings; they can be decreased. Invalid
 configurations skip the hook without showing a traceback. Writes use a short
 exclusive lock, unique temporary file, fsync and atomic replacement. A leftover
@@ -415,8 +424,8 @@ by NextPrompt. Codex analytics/exporters are disabled for inference.
 Redacted conversation is sent to **the model service used by the child Codex CLI**,
 subject to that service's policies and account settings. The user-controlled Codex
 installation, authentication store and parent session persistence remain separate
-from NextPrompt. Clipboard contents can be read by other local applications, which
-is why Auto Copy requires explicit consent. See [SECURITY.md](../SECURITY.md).
+from NextPrompt. Clipboard contents can be read by other local applications; only the
+suggestion text is copied, and Auto Copy can be turned off. See [SECURITY.md](../SECURITY.md).
 
 ## Models and quota
 
@@ -544,7 +553,7 @@ NEXTPROMPT_RUN_CLI_INTEGRATION=1 python -m pytest -q
 
 Unit tests cover parsing, size limits, redaction/provider boundaries, sanitization,
 completed-work guards, config concurrency, clipboard backend order/Unicode, explicit
-setup consent, fail-open behavior, disabled mode and re-entry. Opt-in integration
+setup choices, notifications, fail-open behavior, disabled mode and re-entry. Opt-in integration
 tests install/remove the plugin with real CLI commands, exercise actual inference
 arguments and root Stop, verify one suggestion and no recursive task, and inject a
 model failure. Test hooks use trust bypass only inside a disposable, vetted fixture.

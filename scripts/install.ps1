@@ -120,14 +120,14 @@ if ([string]::IsNullOrWhiteSpace($AutoCopy)) {
     Write-Host ""
     Write-Host "NextPrompt clipboard preference"
     Write-Host "Automatically copy suggested next prompts to your clipboard?"
-    Write-Host "Y = automatic copy; N = display only (default)."
+    Write-Host "Y = automatic copy (default); N = display only."
     Write-Host "Other local applications may read clipboard contents."
     try {
         while ([string]::IsNullOrWhiteSpace($AutoCopy)) {
-            $answer = (Read-Host "Choose Y or N [N]").Trim().ToLowerInvariant()
+            $answer = (Read-Host "Choose Y or N [Y]").Trim().ToLowerInvariant()
             switch ($answer) {
-                { $_ -in @("y", "yes") } { $AutoCopy = "on" }
-                { $_ -in @("", "n", "no") } { $AutoCopy = "off" }
+                { $_ -in @("", "y", "yes") } { $AutoCopy = "on" }
+                { $_ -in @("n", "no") } { $AutoCopy = "off" }
                 default { Write-Host "Please enter Y or N." }
             }
         }
@@ -146,6 +146,7 @@ Write-Host ""
 Write-Host "NextPrompt installed successfully."
 if ($AutoCopy -eq "on") {
     Write-Host "Automatic clipboard copy: ON. New suggestions will be copied automatically."
+    Write-Host "A desktop notification shows each suggestion when it is ready to paste."
 }
 else {
     Write-Host "Automatic clipboard copy: OFF. Suggestions will be displayed only."

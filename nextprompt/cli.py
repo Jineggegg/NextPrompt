@@ -30,7 +30,8 @@ def status(cfg: dict[str, Any]) -> str:
         [
             "NextPrompt",
             f"Enabled:          {'Yes' if cfg['enabled'] else 'No'}",
-            f"Auto-copy:        {'Yes' if auto is True else 'No (display only)'}",
+            f"Auto-copy:        {'No (display only)' if auto is False else 'Yes'}",
+            f"Notification:     {'Yes' if cfg['notify'] else 'No'}",
             f"Model:            {cfg['model']['name']} (configured)",
             "Language:         "
             + ("auto (follows your messages)" if cfg["language"] == "auto" else cfg["language"]),
@@ -75,7 +76,7 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
         config_ok = True
         rows.append(
             "Config              ✓ "
-            + ("configured" if store.path.exists() else "defaults ready (display only)")
+            + ("configured" if store.path.exists() else "defaults ready (auto-copy on)")
         )
     except ConfigError as exc:
         # Hooks skip an invalid config; check the remaining setup with defaults.
@@ -167,6 +168,7 @@ def parser() -> argparse.ArgumentParser:
     setup.add_argument("--max-words", type=int)
     setup.add_argument("--redaction", choices=("on", "off"))
     setup.add_argument("--osc52", choices=("on", "off"))
+    setup.add_argument("--notify", choices=("on", "off"))
     setup.add_argument("--trigger-mode", choices=("every_turn", "manual"))
     setup.add_argument("--language", choices=("auto", *LANGUAGES))
     for command in ("status", "enable", "disable"):
@@ -195,6 +197,7 @@ def run(args: argparse.Namespace) -> int:
                 "max_words",
                 "redaction",
                 "osc52",
+                "notify",
                 "trigger_mode",
                 "language",
             )
@@ -205,12 +208,12 @@ def run(args: argparse.Namespace) -> int:
                 return 2
             print(
                 "NextPrompt Setup\nAutomatically copy suggested next prompts to your clipboard?\n"
-                "Default: No (display only)\n1. Yes — automatically copy suggestions\n"
+                "Default: Yes\n1. Yes — automatically copy suggestions\n"
                 "2. No  — display suggestions only"
             )
             while args.auto_copy is None:
-                answer = input("Choose 1 or 2 (explicit choice required): ").strip().casefold()
-                if answer in ("1", "yes", "y"):
+                answer = input("Choose 1 or 2 [1]: ").strip().casefold()
+                if answer in ("", "1", "yes", "y"):
                     args.auto_copy = "on"
                 elif answer in ("2", "no", "n"):
                     args.auto_copy = "off"
@@ -233,12 +236,14 @@ def run(args: argparse.Namespace) -> int:
                 cfg["trigger_mode"] = args.trigger_mode
             if args.language is not None:
                 cfg["language"] = args.language
+            if args.notify is not None:
+                cfg["notify"] = args.notify == "on"
 
         cfg = store.update(configure)
         print("NextPrompt configured.\n" + status(cfg))
         print(
             "Next suggestions will be copied automatically after completed Codex turns."
-            if cfg["clipboard"]["auto_copy"]
+            if cfg["clipboard"]["auto_copy"] is not False
             else "Next suggestions will be displayed only."
         )
     elif args.command in ("enable", "disable"):

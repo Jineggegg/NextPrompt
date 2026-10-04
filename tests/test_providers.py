@@ -53,8 +53,11 @@ def test_inference_safety_flags(monkeypatch, settings, tmp_path):
     args = provider.inference_command(ModelSelection("gpt-5.6-luna", "low"), tmp_path)
     assert all(flag in args for flag in ("--ignore-user-config", "--ignore-rules", "--ephemeral"))
     assert args[args.index("-s") + 1] == "read-only"
-    assert "hooks" in args and "plugins" in args and "shell_tool" in args
+    assert "hooks" in args and "plugins" in args and "shell_tool" in args and "goals" in args
     assert 'web_search="disabled"' in args
+    assert "tools.experimental_request_user_input.enabled=false" in args
+    assert "include_permissions_instructions=false" in args
+    assert "include_environment_context=false" in args
     assert provider._environment()["NEXTPROMPT_INTERNAL"] == "1"
     assert args[-1] == "-"
 

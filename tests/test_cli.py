@@ -50,7 +50,7 @@ def test_manual_suggest_without_setup(tmp_path, capsys, monkeypatch, legacy_unse
     monkeypatch.setattr("nextprompt.cli.generate_suggestion", generate)
     assert main(["--data-dir", str(tmp_path), "suggest", "--context-stdin"]) == 0
     assert "Next prompt:" in capsys.readouterr().out
-    assert generate.call_args.args[1]["clipboard"]["auto_copy"] is (None if legacy_unset else False)
+    assert generate.call_args.args[1]["clipboard"]["auto_copy"] is (None if legacy_unset else True)
     assert store.path.exists() is legacy_unset
 
 
@@ -138,7 +138,7 @@ def test_doctor_without_probe_does_not_run_inference(tmp_path, capsys, doctor_pr
     assert main(["--data-dir", str(tmp_path), "doctor"]) == 0
     output = capsys.readouterr().out
     assert "(catalog)" in output
-    assert "defaults ready (display only)" in output
+    assert "defaults ready (auto-copy on)" in output
     assert "setup pending" not in output
     doctor_provider.generate.assert_not_called()
 
@@ -159,7 +159,7 @@ def test_language_setting(tmp_path, capsys):
     assert main([*args, "setup", "--language", "zh-TW"]) == 0
     store = ConfigStore(tmp_path)
     assert store.load()["language"] == "zh-TW"
-    assert store.load()["clipboard"]["auto_copy"] is False  # Not a clipboard choice.
+    assert store.load()["clipboard"]["auto_copy"] is True  # Default kept; not a clipboard choice.
     assert "Language:         zh-TW" in capsys.readouterr().out
 
 

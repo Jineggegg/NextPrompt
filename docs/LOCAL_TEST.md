@@ -50,10 +50,9 @@ codex
 ```
 
 重启已有 Codex 会话。在 `/hooks` 中检查并信任 NextPrompt 的 Stop hook。
-手动安装默认直接进入“只显示建议”模式，无需运行 `$nextprompt-setup`。
-Windows 安装脚本会询问 `Choose Y or N [N]`：选择 Y 开启自动复制，
-选择 N 或直接回车只显示建议。无人值守时显式传入 `-AutoCopy on` 或
-`-AutoCopy off`；无可用交互输入时不会自行推断为同意。
+手动安装默认就会自动复制建议并弹出系统通知，无需运行 `$nextprompt-setup`。
+Windows 安装脚本会询问 `Choose Y or N [Y]`：选择 Y 或直接回车开启自动复制，
+选择 N 只显示建议。无人值守时显式传入 `-AutoCopy on` 或 `-AutoCopy off`。
 安装结束报告会按实际保存的选择显示 `Automatic clipboard copy: ON` 并
 说明新建议会自动复制，或显示 `OFF` 并说明仅展示建议。
 安装脚本结束时会展示完整退出并重启 Codex、打开 `/hooks`、检查并信任
@@ -61,11 +60,11 @@ NextPrompt Stop hook、完成一次普通对话的指引。安装不代表 Hook 
 脚本也不会代替用户批准。直接使用 `codex plugin add` 的用户同样需要这些步骤，
 但 Codex 自带命令不会展示本脚本的定制提示；请按 README 的安装后指南操作。
 只下载 skills 不会注册自动 Hook，需要安装完整插件。
-只有想自动复制到剪贴板或修改其他设置时才运行 `$nextprompt-setup`。
-明确选择 Yes/Y 才开启 Auto Copy；未回答不等于同意。脚本仅修改用户本次
-选择的剪贴板配置，其他已有设置保留。安装时不会立即复制任何内容，也不会
+只有想关闭自动复制、关闭通知（`--notify off`）或修改其他设置时才运行 `$nextprompt-setup`。
+脚本仅修改用户本次选择的剪贴板配置，其他已有设置保留。安装时不会立即复制任何内容，也不会
 自动提交或执行建议；复制发生在 Hook 加载并获信任后的有效建议生成时。
-旧配置的 `auto_copy: null` 也可直接显示建议，不会自动复制。
+旧配置的 `auto_copy: null` 按默认处理，会自动复制。macOS 第一次如果没有弹通知，
+到「系统设置 → 通知」里允许「脚本编辑器（Script Editor）」发送通知。
 skill 选择器可能将名称显示为 `nextprompt:nextprompt-setup` 等带命名空间的形式。
 
 安装无需 pip。不要为普通使用绕过 hook 信任检查。插件使用官方

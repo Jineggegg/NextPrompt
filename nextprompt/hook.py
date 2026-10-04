@@ -9,6 +9,7 @@ from typing import Any
 from .clipboard import ClipboardAdapter, SystemClipboardAdapter
 from .config import ConfigStore
 from .i18n import message, resolve_language
+from .notify import send_notification
 from .output import SuggestionResult, render
 from .providers import CodexSuggestionProvider, ProviderUnavailable, SuggestionProvider
 from .suggestion import obvious_repeat, sanitize
@@ -28,6 +29,7 @@ def generate_suggestion(
     provider: SuggestionProvider | None = None,
     clipboard: ClipboardAdapter | None = None,
     language: str | None = None,
+    notify: bool = False,
 ) -> str | None:
     context = bounded_messages(messages, cfg["context"], cfg["privacy"]["redact_secrets"])
     if not context:
@@ -36,7 +38,8 @@ def generate_suggestion(
     text = sanitize(provider.generate(format_context(context)), **cfg["suggestion"])
     if not text or obvious_repeat(text, context):
         return None
-    auto_copy = cfg["clipboard"]["auto_copy"] is True
+    # On unless explicitly turned off; legacy unset (None) follows the default.
+    auto_copy = cfg["clipboard"]["auto_copy"] is not False
     copied, backend = False, "unavailable"
     if auto_copy:
         try:
@@ -59,6 +62,12 @@ def generate_suggestion(
     )
     if language is None:
         language = conversation_language(cfg, context)
+    if notify:
+        # Desktop apps may not show hook messages; this marks the moment to paste.
+        try:
+            send_notification(message(language, "notify_copied" if copied else "notify"), text)
+        except Exception:
+            pass
     return render(result, auto_copy, language)
 
 
@@ -94,7 +103,9 @@ def handle_stop(
         conversation = conversation or CodexConversationAdapter(cfg["privacy"]["redact_secrets"])
         messages = conversation.read(Path(path))
         language = conversation_language(cfg, messages)
-        return generate_suggestion(messages, cfg, store, provider, clipboard, language)
+        return generate_suggestion(
+            messages, cfg, store, provider, clipboard, language, notify=cfg["notify"]
+        )
     except ProviderUnavailable as exc:
         try:
             if store and store.error_notice(str(exc)):

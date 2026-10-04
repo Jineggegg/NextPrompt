@@ -17,13 +17,14 @@ repository, shell, MCP, web and external-action extensions where official flags
 allow. A local attacker controlling Codex, Python, clipboard executables, config
 or the account can defeat these boundaries.
 
-## Clipboard consent
+## Clipboard and notifications
 
-Other applications on the system may read clipboard contents; clipboard managers,
-remote desktops and OS clipboard sync can also retain or forward them. Automatic
-copy is therefore **explicit opt-in**, with display-only mode as the default.
-Installation and unanswered setup questions never grant clipboard consent.
-Legacy unset clipboard settings also display suggestions without copying.
+Automatic copy is **on by default** so a suggestion is ready to paste; turn it off with
+`setup --auto-copy off` (or answer N in the Windows installer). Other applications on
+the system may read clipboard contents; clipboard managers, remote desktops and OS
+clipboard sync can also retain or forward them. A desktop notification (also on by
+default, `setup --notify off`) shows the suggestion text; notification text is passed
+as process arguments or environment variables, never interpolated into a script.
 The copied payload is only the sanitized suggestion, not status text or context.
 OSC 52 defaults off, is capability-gated and cannot verify terminal acceptance.
 

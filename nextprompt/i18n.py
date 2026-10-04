@@ -7,6 +7,8 @@ from collections.abc import Iterable
 
 MESSAGES: dict[str, dict[str, str]] = {
     "en": {
+        "notify_copied": "Next prompt copied",
+        "notify": "Next prompt",
         "display": "Next prompt:",
         "next": "Next →",
         "copied": "✓ Copied to clipboard",
@@ -15,6 +17,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "skipped": "NextPrompt skipped: suggestion model unavailable.",
     },
     "zh": {
+        "notify_copied": "下一句已复制",
+        "notify": "下一句",
         "display": "下一句：",
         "next": "下一句 →",
         "copied": "✓ 已复制到剪贴板",
@@ -23,6 +27,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "skipped": "NextPrompt 已跳过：建议模型暂不可用。",
     },
     "zh-TW": {
+        "notify_copied": "下一句已複製",
+        "notify": "下一句",
         "display": "下一句：",
         "next": "下一句 →",
         "copied": "✓ 已複製到剪貼簿",
@@ -31,6 +37,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "skipped": "NextPrompt 已略過：建議模型暫時無法使用。",
     },
     "ja": {
+        "notify_copied": "次のプロンプトをコピーしました",
+        "notify": "次のプロンプト",
         "display": "次のプロンプト：",
         "next": "次へ →",
         "copied": "✓ クリップボードにコピーしました",
@@ -39,6 +47,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "skipped": "NextPrompt をスキップしました：提案モデルを利用できません。",
     },
     "ko": {
+        "notify_copied": "다음 프롬프트를 복사했습니다",
+        "notify": "다음 프롬프트",
         "display": "다음 프롬프트:",
         "next": "다음 →",
         "copied": "✓ 클립보드에 복사했습니다",
@@ -47,6 +57,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "skipped": "NextPrompt 건너뜀: 제안 모델을 사용할 수 없습니다.",
     },
     "es": {
+        "notify_copied": "Siguiente prompt copiado",
+        "notify": "Siguiente prompt",
         "display": "Siguiente prompt:",
         "next": "Siguiente →",
         "copied": "✓ Copiado al portapapeles",
@@ -55,6 +67,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "skipped": "NextPrompt omitido: modelo de sugerencias no disponible.",
     },
     "fr": {
+        "notify_copied": "Prochain prompt copié",
+        "notify": "Prochain prompt",
         "display": "Prochain prompt :",
         "next": "Suivant →",
         "copied": "✓ Copié dans le presse-papiers",
@@ -63,6 +77,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "skipped": "NextPrompt ignoré : modèle de suggestion indisponible.",
     },
     "de": {
+        "notify_copied": "Nächster Prompt kopiert",
+        "notify": "Nächster Prompt",
         "display": "Nächster Prompt:",
         "next": "Weiter →",
         "copied": "✓ In die Zwischenablage kopiert",
@@ -71,6 +87,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "skipped": "NextPrompt übersprungen: Vorschlagsmodell nicht verfügbar.",
     },
     "pt": {
+        "notify_copied": "Próximo prompt copiado",
+        "notify": "Próximo prompt",
         "display": "Próximo prompt:",
         "next": "Próximo →",
         "copied": "✓ Copiado para a área de transferência",
@@ -79,6 +97,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "skipped": "NextPrompt ignorado: modelo de sugestões indisponível.",
     },
     "ru": {
+        "notify_copied": "Следующий запрос скопирован",
+        "notify": "Следующий запрос",
         "display": "Следующий запрос:",
         "next": "Далее →",
         "copied": "✓ Скопировано в буфер обмена",

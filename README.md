@@ -8,7 +8,7 @@ NextPrompt 在 Codex 每轮回答完成后，生成一句贴合当前对话的�
 - **几秒就绪**：15 轮真实模型测试中，11 轮为 3–5 秒，平均 4.37 秒。
 - **轻量开销**：只取最近 5 条消息，使用轻量模型和 `low` 思考，输出一句简短建议；Codex 检查结果缓存 12 小时，每轮少启动 3 次 Codex。
 - **多语言**：用你的语言给建议；提示文字跟随你最近的消息切换，支持 中文（简体/繁體）、日本語、한국어、English、Español、Français、Deutsch、Português、Русский。
-- **自动复制**：支持 Windows、WSL、macOS 和常见 Linux 桌面；也可以选择仅展示。
+- **自动复制 + 通知**：默认开启，建议一准备好就复制到剪贴板并弹出系统通知，看到通知即可粘贴；支持 Windows、WSL、macOS 和常见 Linux 桌面，也可以改为仅展示。
 - **由你决定发送**：不会自动提交或执行建议。
 
 NextPrompt suggests one short next instruction after each Codex turn. Choose **Y** during installation to **automatically copy suggestions to your clipboard**, then paste with **Ctrl+V** (**Cmd+V** on macOS).
@@ -16,10 +16,10 @@ NextPrompt suggests one short next instruction after each Codex turn. Choose **Y
 - **Ready in seconds**: 11 of 15 measured turns took 3–5 seconds; average 4.37 seconds.
 - **Lightweight**: the last 5 messages, a lightweight model with `low` reasoning, and one short suggestion; Codex checks are cached for 12 hours, saving three Codex startups per turn.
 - **Multilingual**: suggestions come in your language, and labels follow your latest message: 中文（简体/繁體）、日本語、한국어、English、Español、Français、Deutsch、Português、Русский.
-- **Optional auto-copy**: Windows, WSL, macOS and common Linux desktops; display-only mode is also available.
+- **Auto-copy + notification by default**: each suggestion is copied and announced with a desktop notification, so you know when to paste; Windows, WSL, macOS and common Linux desktops. Display-only mode is available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
-版本 / Version **0.1.7** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
+版本 / Version **0.1.8** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
 
 ## 安装 / Installation
 
@@ -32,10 +32,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
 需提前安装 Git，并安装、登录 Codex CLI；Python 缺失或版本过旧时，Windows 安装脚本通过 `winget` 自动安装。
-安装时询问是否自动复制到剪贴板：**Y 开启，N 或直接回车仅展示**，结束报告会确认所选模式。
+安装时询问是否自动复制到剪贴板：**Y 或直接回车开启（默认），N 仅展示**，结束报告会确认所选模式。
 
 Install Git, then install and sign in to Codex CLI first. On Windows, the installer uses `winget` to install Python if it is missing or too old.
-When asked about clipboard copy, **Y enables auto-copy; N or Enter keeps display-only mode**. The final report confirms your choice.
+When asked about clipboard copy, **Y or Enter enables auto-copy (default); N keeps display-only mode**. The final report confirms your choice.
 
 安装结束后 / After installation:
 
@@ -60,9 +60,9 @@ codex plugin marketplace add .
 codex plugin add nextprompt@nextprompt
 ```
 
-同样需要重启并信任 Hook；手动安装默认仅展示，可用 `$nextprompt-setup` 开启自动复制。
+同样需要重启并信任 Hook；手动安装同样默认自动复制并弹通知，可用 `$nextprompt-setup` 关闭。
 
-Restart Codex and trust the Hook here too. Manual installation defaults to display-only; enable auto-copy with `$nextprompt-setup`.
+Restart Codex and trust the Hook here too. Manual installation also copies and notifies by default; turn either off with `$nextprompt-setup`.
 
 ## 显示示例 / What you see
 
@@ -97,10 +97,10 @@ Only the suggestion text is copied; if copying fails, the suggestion stays on sc
 ## 更多信息 / More information
 
 速度因模型和网络而异；Token 用量尚未完整计量，独立请求会消耗模型额度。
-仅使用最近的对话，不扫描项目，不保存对话副本；剪贴板复制需要你明确选择开启。
+仅使用最近的对话，不扫描项目，不保存对话副本；剪贴板里只放建议正文，可随时关闭自动复制。
 
 Speed varies by model and network. Full token usage has not been measured; separate requests consume model quota.
-Only recent conversation is used: no project scanning or saved conversation copies. Clipboard copy requires your opt-in.
+Only recent conversation is used: no project scanning or saved conversation copies. Only the suggestion text is copied, and auto-copy can be turned off.
 
 - [完整使用说明 / Full guide](docs/GUIDE.md)
 - [中文安装与排查 / Chinese installation guide](docs/LOCAL_TEST.md)

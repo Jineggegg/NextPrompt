@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.8 — 2026-10-04
+
+- Automatic clipboard copy is now on by default, including manual installs; the Windows
+  installer defaults to Y (Enter) and N keeps display-only mode. Legacy unset settings
+  follow the default; an explicit `auto_copy: false` is respected.
+- Show a desktop notification with the suggestion as soon as it is copied (macOS,
+  Windows/WSL toast, Linux `notify-send`), because the Codex desktop app does not show
+  Hook messages in the conversation. Localized; `setup --notify off` disables it.
+- Slimmer suggestion requests (14.3 KB → 8.8 KB with Codex 0.159/0.160): disable the
+  `goals` feature and `request_user_input` tool, and omit Codex's sandbox and
+  environment prose. Identical prefixes also help server-side prompt caching.
+- The integration safety check now inspects tools sent inside Codex's
+  `additional_tools` input item, which the previous check missed.
+
 ## 0.1.7 — 2026-10-04
 
 - Support Python 3.9 so the `python3` bundled with macOS (3.9.6) runs the Stop Hook.

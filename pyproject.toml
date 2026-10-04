@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nextprompt"
-version = "0.1.7"
+version = "0.1.8"
 description = "NextPrompt for Codex: lightweight next-step suggestions"
 requires-python = ">=3.9"
 license = {text = "MIT"}
