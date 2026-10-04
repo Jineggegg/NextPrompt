@@ -1,5 +1,23 @@
 # Validation
 
+## v0.1.6 — 2026-10-04, pre-release review and full regression
+
+- Linux, Python 3.10 / 3.11 / 3.12 / 3.13 with real Codex CLI **0.160.0** and
+  `NEXTPROMPT_RUN_CLI_INTEGRATION=1`: **248 passed, 21 skipped** on each version
+  (the skips are Windows-only installer cases). Integration and hook suites also
+  passed with Codex **0.159.0**. Ruff lint/format passed.
+- GitHub Actions on Ubuntu, macOS and Windows with Python 3.10 and 3.12: all green;
+  Windows ran the 21 installer cases and the new `cmd.exe` hook-command cases.
+- Real Codex 0.160.0 confirmed that the Hook's injected `PLUGIN_DATA` equals the
+  data directory used by the skills/CLI, and that a real rollout parses into only
+  the visible user/assistant messages.
+- Before the fix, a real Codex Stop on a host with `python3` but no `python`
+  (stock macOS/Linux) reported `hook: Stop Failed` and made no suggestion request.
+  With the `python` → `python3` fallback the same run completed and requested one
+  suggestion.
+- Not verified here: real desktop clipboard round trips and authenticated remote
+  inference; earlier Windows results for those remain the latest evidence.
+
 ## v0.1.5 — 2026-10-04, unified NextPrompt identity
 
 - Windows full suite: **247 passed, 7 skipped**; lint/format and all six skill
