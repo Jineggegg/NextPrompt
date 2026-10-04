@@ -47,6 +47,17 @@
   reply offered no fix), every side question was followed by an offer to resume, and the
   reminder's shape was followed in every line. Stats recorded 44 replies, 16 suggestions,
   11 sent as is (exactly the 11 pasted turns), 5 not used, none left pending.
+- macOS 26.3 (Apple silicon), system Python 3.9.6, the Codex bundled with ChatGPT.app
+  (0.144.0-alpha.4, older than the documented 0.159 minimum): the full suite passed (501
+  passed, 37 skipped: Windows installer and opt-in cases). The integration cases with this
+  Codex: the 3 inline-mode cases passed (hooks inject the instruction and reminder, a quoted
+  line is copied with no extra request, no line makes no request); the 5 model-mode cases
+  failed because the separate suggestion request refuses Codex older than 0.159, as before.
+  Real end to end with the same 5 sessions, 2 runs, 44 turns (`gpt-5.6-luna` high; this
+  Codex cannot use the gpt-6 models with a ChatGPT account): 44/44 matched expectations,
+  0/18 suggestions where none was right, 14/14 due ones copied, every side question followed
+  by an offer to resume; stats recorded exactly the 12 pasted turns as used. Doctor reports
+  pbcopy and macOS; no real clipboard write or notification was made.
 - Tests: Windows, Python 3.12: 502 passed, 36 skipped. Linux (WSL), Python 3.14, with the
   real Codex CLI 0.160.0 and the local simulated model (`NEXTPROMPT_RUN_CLI_INTEGRATION=1`):
   509 passed, 29 skipped; the integration cases confirm the reminder reaches the root
