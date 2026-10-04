@@ -42,10 +42,16 @@ one short suggestion or nothing when the response is invalid or unhelpful.
 
 ## Features
 
-- By default the root Codex model ends each reply with a `Next prompt:` (Chinese:
-  `下一步建议：`) line, requested through SessionStart and UserPromptSubmit hooks; the root
-  `Stop` hook copies the text after the colon unchanged. Replies without the line, or
-  `--source model`, use the separate lightweight request below. No `SubagentStop` suggestions.
+- By default the root Codex model ends a reply with a suggestion line only for three kinds
+  of step: a part the user named or planned that is not done yet, finishing what the turn
+  left unfinished or only diagnosed, and resuming unfinished work after a side question.
+  New ideas, confirmations, answers, stopping and wrapping up get none. The line is in the
+  model's own, varied words around one quoted prompt (`→ 要不要「接着写第三章」？`,
+  `→ One loose end: “fix the two failing tests”.`); each UserPromptSubmit reminder proposes
+  the next wording shape for that session. The root `Stop` hook copies only the quoted
+  prompt; Chinese prompts get a short go-ahead (`接着写第三章，做吧`). A reply without a line
+  copies nothing and does not start the fallback model; `--source model` uses the separate
+  lightweight request below. No `SubagentStop` suggestions.
 - Last 5 visible user/assistant messages, 2500 characters per message, 8000 total.
 - Common credential redaction before clipping or inference.
 - Account model discovery, conservative lightweight runtime fallback, `low` reasoning by default.

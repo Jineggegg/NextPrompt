@@ -1,5 +1,69 @@
 # Validation
 
+## Unreleased — 2026-10-04, suggestions only when useful, varied wording
+
+- Method: replay simulation through `codex exec` with the real `gpt-6-luna`. Every reply
+  went through the real Stop hook with a fake clipboard; the UserPromptSubmit reminder and
+  its per-session wording rotation came from the real hook. An independent judge
+  (`gpt-6-luna`, high reasoning) checked each turn against the suggestion policy, and every
+  flagged turn was reviewed by hand.
+- Tuning set: 40 single-turn scenarios and 8 multi-turn sessions (44 turns; the simulated
+  user pastes the copied suggestion when there is one): the reported case (confirming the
+  PDF holds both sides' prompts), Q&A, greetings, thanks, "stop", pausing until tomorrow, a
+  side question during unfinished work, sudden topic changes, sudden jumps or drops in
+  difficulty, an ambiguous request, options for the user to pick, a declined suggestion,
+  "no more suggestions", venting, read-only, no-deploy and waiting-for-approval limits,
+  steps only the user can take, a pasted API key, Traditional Chinese, English, Japanese
+  and Korean.
+- Held-out set: 14 scenarios and 2 sessions written after tuning, in other domains. One
+  held-out failure (a wrap-up with planned parts left still got a line) exposed a
+  regression from the last tuning change; it was fixed and the set rerun.
+- Before (0.1.13 instruction, medium reasoning, first 24 scenarios, 1 run): a line on
+  41/44 turns; 11/12 turns where no suggestion was right still got one (e.g.
+  "检查 PDF，确认提示词和回答都显示完整" right after the user asked exactly that); 3
+  suggestions crossed the scenario's limits.
+- After, high reasoning (the default this was tuned for): tuning set, 2 runs, 168 turns:
+  0/52 suggestions where none was right; 38/38 where one was due; none shown but not
+  copied, none out of bounds, no stray brackets, no wording used twice in a row within a
+  session; 22 wordings across 51 lines; judge 166/168 (both flags were advice in the reply
+  body, with no line). Held-out set, 3 runs, 69 turns: 0/27 wrong suggestions; 16/24 due
+  ones copied, and in the other 8 the model first asked for missing content or finished
+  every step in one turn, so no line was right; judge 68/69 (the flag was body text).
+- After, medium reasoning: held-out set, 3 runs: 1/27 wrong (a line after "停，方向错了"),
+  17/24 due ones copied, and a few optional lines were new ideas ("整合三页大纲"). On the
+  tuning set (2 runs, one revision earlier): 0/52 wrong, 34/38 due ones copied; the misses
+  offered the step in prose instead of a line.
+- Limits: replies summarize fictional work, so a model sometimes asked for content instead
+  of inventing it. Desktop rendering and the real clipboard were not exercised.
+- Real end to end (Linux / WSL, Codex CLI 0.160.0, `gpt-6-luna` high, Codex's own system
+  prompt and tools): the built plugin installed into an isolated `CODEX_HOME` with hooks
+  trusted for the run; a test-only wrapper logged hook input and output and auto-copy was
+  off. 5 real multi-turn sessions in copies of a small project with a failing test (a
+  three-chapter story, debugging with "先别改代码" then a side question, three subcommands
+  one at a time with a side question, an English README with one section dropped,
+  confirmations and venting), 2 runs, 44 turns, resumed with `codex exec resume`; pasted
+  turns sent exactly what the clipboard would hold. 43/44 turns matched expectations:
+  0/18 suggestions where none was right, 13/14 due ones copied (the miss: a diagnosis-only
+  reply offered no fix), every side question was followed by an offer to resume, and the
+  reminder's shape was followed in every line. Stats recorded 44 replies, 16 suggestions,
+  11 sent as is (exactly the 11 pasted turns), 5 not used, none left pending.
+- macOS 26.3 (Apple silicon), system Python 3.9.6, the Codex bundled with ChatGPT.app
+  (0.144.0-alpha.4, older than the documented 0.159 minimum): the full suite passed (501
+  passed, 37 skipped: Windows installer and opt-in cases). The integration cases with this
+  Codex: the 3 inline-mode cases passed (hooks inject the instruction and reminder, a quoted
+  line is copied with no extra request, no line makes no request); the 5 model-mode cases
+  failed because the separate suggestion request refuses Codex older than 0.159, as before.
+  Real end to end with the same 5 sessions, 2 runs, 44 turns (`gpt-5.6-luna` high; this
+  Codex cannot use the gpt-6 models with a ChatGPT account): 44/44 matched expectations,
+  0/18 suggestions where none was right, 14/14 due ones copied, every side question followed
+  by an offer to resume; stats recorded exactly the 12 pasted turns as used. Doctor reports
+  pbcopy and macOS; no real clipboard write or notification was made.
+- Tests: Windows, Python 3.12: 502 passed, 36 skipped. Linux (WSL), Python 3.14, with the
+  real Codex CLI 0.160.0 and the local simulated model (`NEXTPROMPT_RUN_CLI_INTEGRATION=1`):
+  509 passed, 29 skipped; the integration cases confirm the reminder reaches the root
+  request, a quoted line is copied with no extra request, and a reply without a line makes
+  no extra request. Ruff check and format passed on both.
+
 ## v0.1.10 — 2026-10-04, one-time installation report
 
 - Windows Python 3.12: Ruff check and format check passed; the full local suite

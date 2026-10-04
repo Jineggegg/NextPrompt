@@ -256,6 +256,8 @@ def test_real_stop_hook_one_child_no_recursive_turn(real_cli, tmp_path, monkeypa
     hooks_path.write_text(json.dumps(hooks))
     store = ConfigStore()
     assert not store.path.exists()  # Real first-run install needs no setup.
+    # Only model mode makes the separate suggestion request after a reply.
+    store.update(lambda cfg: cfg.update(source="model"))
     result = command(
         [
             "exec",
@@ -293,7 +295,7 @@ def test_real_stop_hook_one_child_no_recursive_turn(real_cli, tmp_path, monkeypa
 def test_real_stop_model_failure_root_still_succeeds(real_cli):
     install(real_cli["cwd"])
     store = ConfigStore()
-    store.update(lambda cfg: cfg["clipboard"].update(auto_copy=False))
+    store.update(lambda cfg: (cfg["clipboard"].update(auto_copy=False), cfg.update(source="model")))
     real_cli["controls"]["fail_child"] = True
     # A synthetic model authentication failure does not resume or fail the root.
     result = command(
@@ -318,9 +320,9 @@ def test_real_stop_model_failure_root_still_succeeds(real_cli):
 
 
 def test_real_inline_line_copied_without_a_child_request(real_cli, tmp_path):
-    # Default inline mode: hooks ask the root model for the line; Stop copies it as is.
-    line = "Add a regression test for the logout redirect."
-    real_cli["controls"]["root_reply"] = f"Implemented the redirect fix.\n\nNext prompt: {line}"
+    # Default inline mode: hooks ask the root model for the line; Stop copies the quote.
+    line = "→ Want me to “fix the two failing logout tests”?"
+    real_cli["controls"]["root_reply"] = f"Implemented the redirect fix.\n\n{line}"
     installed = Path(install(real_cli["cwd"])["installedPath"])
     receipt = tmp_path / "hook-output.json"
     observer = tmp_path / "observer.py"
@@ -356,10 +358,49 @@ def test_real_inline_line_copied_without_a_child_request(real_cli, tmp_path):
     assert len(real_cli["requests"]) == 1  # The root turn only; no suggestion request.
     root = json.dumps(real_cli["requests"][0], ensure_ascii=False)
     assert "NextPrompt is installed." in root  # SessionStart instruction
-    assert "NextPrompt: end this reply" in root  # UserPromptSubmit reminder
+    assert "NextPrompt: add a suggestion line only" in root  # UserPromptSubmit reminder
+    assert "word the line this time like this" in root  # with one wording shape
     output = json.loads(receipt.read_bytes())["systemMessage"]
     # The reply already shows the line; the Hook only reports the copy outcome.
     assert output in (
         "✓ Copied to clipboard",
         "Clipboard unavailable — copy the prompt above manually.",
     )
+
+
+def test_real_inline_reply_without_a_line_makes_no_request(real_cli, tmp_path):
+    # No line means the model judged no suggestion worth it: nothing is copied or generated.
+    real_cli["controls"]["root_reply"] = "Confirmed: the PDF holds every prompt and reply."
+    installed = Path(install(real_cli["cwd"])["installedPath"])
+    receipt = tmp_path / "hook-output.json"
+    observer = tmp_path / "observer.py"
+    observer.write_text(
+        "import os,sys,subprocess\nfrom pathlib import Path\n"
+        "p=subprocess.run([sys.executable,os.path.join(os.environ['PLUGIN_ROOT'],"
+        "'hooks','stop.py')],input=sys.stdin.buffer.read(),capture_output=True)\n"
+        f"Path({str(receipt)!r}).write_bytes(p.stdout)\n"
+        "sys.stdout.buffer.write(p.stdout)\n"
+    )
+    hooks_path = installed / "hooks/hooks.json"
+    hooks = json.loads(hooks_path.read_text())
+    hooks["hooks"]["Stop"][0]["hooks"][0]["command"] = (
+        shlex.quote(sys.executable) + " " + shlex.quote(str(observer))
+    )
+    hooks_path.write_text(json.dumps(hooks))
+    result = command(
+        [
+            "exec",
+            "--skip-git-repo-check",
+            "--color",
+            "never",
+            "--dangerously-bypass-hook-trust",
+            "-m",
+            "gpt-5.6-luna",
+            "Make sure the PDF has both sides of the conversation.",
+        ],
+        real_cli["cwd"],
+    )
+    assert result.returncode == 0, result.stderr
+    assert "hook: Stop Completed" in result.stderr
+    assert len(real_cli["requests"]) == 1  # The root turn only.
+    assert receipt.read_bytes() == b""
