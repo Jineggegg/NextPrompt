@@ -15,6 +15,10 @@
   Linux through the system package manager.
 - Both installers end with a bilingual (中文 / English) report: restart Codex, trust the
   Hooks, how suggestions look, how to turn off notifications and how to pause suggestions.
+- Installers show the recommended settings (auto-copy and desktop notifications both on)
+  and ask whether to keep them. Enter or Y keeps them; N asks for two letters, copy then
+  notifications (`yn`, `ny`, `nn`, `yy`). The report that follows shows both saved values.
+  New `-Notify on|off` / `--notify on|off` flags skip the question like `-AutoCopy`.
 - CI runs Python 3.9 to 3.14 on the self-hosted Linux runner.
 - Re-trust the hooks in `/hooks` after updating: the hook commands changed (new `py -3`
   fallback).

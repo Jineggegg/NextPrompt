@@ -54,8 +54,8 @@ function Fake-Python {
             if ($global:case.setup_exit -ne 0) {
                 $global:LASTEXITCODE = [int]$global:case.setup_exit
             } else {
-                $setupArgs = @($args[0], '--data-dir', $env:NEXTPROMPT_TEST_DATA,
-                    'setup', '--auto-copy', $args[-1])
+                $setupArgs = @($args[0], '--data-dir', $env:NEXTPROMPT_TEST_DATA) +
+                    @($args | Select-Object -Skip 1)
                 & $env:NEXTPROMPT_TEST_PYTHON @setupArgs
             }
         } else {
@@ -102,6 +102,7 @@ function Read-Host {
     param($Prompt)
     $global:calls.Add(@{ command = 'prompt'; arguments = @($Prompt) })
     if ($global:case.prompt_error) { throw 'No interactive input available' }
+    if (@($global:case.answers).Count -eq 0) { throw 'No answer left' }
     $answer = $global:case.answers[0]
     $global:case.answers = @($global:case.answers | Select-Object -Skip 1)
     return $answer
@@ -109,6 +110,7 @@ function Read-Host {
 try {
     $parameters = @{ Probe = $true }
     if ($global:case.auto_copy) { $parameters.AutoCopy = $global:case.auto_copy }
+    if ($global:case.notify) { $parameters.Notify = $global:case.notify }
     & $env:NEXTPROMPT_INSTALL_TEST_SCRIPT @parameters
     $result = @{ success = $true; calls = @($global:calls.ToArray()) }
 } catch {
@@ -125,7 +127,7 @@ def test_installer_prerequisite_paths(python):
     calls = result["calls"]
     assert [c["command"] for c in calls] == (
         ([] if python == "existing" else ["winget"])
-        + ["codex", "codex", "doctor", "prompt", "setup"]
+        + ["codex", "codex", "doctor", "prompt", "prompt", "setup"]
     )
     if python != "existing":
         args = calls[0]["arguments"]
@@ -140,11 +142,13 @@ def test_installer_prerequisite_paths(python):
     assert "Fully quit and reopen Codex" in output
     assert "Open /hooks" in output and "UserPromptSubmit and Stop hooks, and trust them" in output
     assert "Other existing settings are preserved" in output
-    assert "Desktop notifications: ON by default" in output
-    assert "turn off notifications" in output
+    assert "Recommended settings" in output and "(recommended)" in output
+    assert "Desktop notifications: ON. A notification appears" in output
+    assert "turn notifications on or off" in output
     assert "Optional: run $nextprompt-setup" in output
     assert "Automatic clipboard copy: OFF" in output
     assert result["config"]["clipboard"]["auto_copy"] is False
+    assert result["config"]["notify"] is True
 
 
 def test_without_winget_installs_signed_python_from_python_org():
@@ -192,29 +196,53 @@ def test_doctor_failure_is_not_reported_as_success():
 
 
 @pytest.mark.parametrize("answer", ["y", "Y", "yes", " YES ", ""])
-def test_yes_saves_consent_and_reports_automatic_copy(answer):
+def test_keeping_recommended_settings_turns_both_on(answer):
     result = run_installer(answers=[answer])
     assert result["success"]
     assert result["config"]["clipboard"]["auto_copy"] is True
-    assert "Automatic clipboard copy: ON" in result["output"]
-    assert "New suggestions will be copied automatically" in result["output"]
-    assert "Automatic clipboard copy: OFF" not in result["output"]
+    assert result["config"]["notify"] is True
+    assert sum(c["command"] == "prompt" for c in result["calls"]) == 1
+    output = result["output"]
+    assert "Automatic clipboard copy: ON" in output
+    assert "New suggestions will be copied automatically" in output
+    assert "Desktop notifications: ON" in output
+    assert "Automatic clipboard copy: OFF" not in output
+    assert "Desktop notifications: OFF" not in output
 
 
-@pytest.mark.parametrize("answer", ["n", "N", "no", " NO "])
-def test_no_answer_saves_display_only(answer):
+@pytest.mark.parametrize(
+    ("pair", "auto_copy", "notify"),
+    [("yn", True, False), ("ny", False, True), ("nn", False, False), ("yy", True, True)],
+)
+def test_no_then_pair_sets_copy_and_notifications(pair, auto_copy, notify):
+    result = run_installer(answers=["n", pair])
+    assert result["success"]
+    assert result["config"]["clipboard"]["auto_copy"] is auto_copy
+    assert result["config"]["notify"] is notify
+    output = result["output"]
+    # The report line ends with a period; the recommendation line says "(recommended)".
+    assert ("Automatic clipboard copy: ON." in output) is auto_copy
+    assert ("Desktop notifications: ON." in output) is notify
+    assert ("Desktop notifications: OFF" in output) is not notify
+
+
+@pytest.mark.parametrize(
+    ("answer", "auto_copy", "notify"), [("YN", True, False), ("n n", False, False)]
+)
+def test_pair_is_accepted_at_the_first_question(answer, auto_copy, notify):
     result = run_installer(answers=[answer])
     assert result["success"]
-    assert result["config"]["clipboard"]["auto_copy"] is False
-    assert "Automatic clipboard copy: OFF" in result["output"]
-    assert "Automatic clipboard copy: ON" not in result["output"]
+    assert result["config"]["clipboard"]["auto_copy"] is auto_copy
+    assert result["config"]["notify"] is notify
+    assert sum(c["command"] == "prompt" for c in result["calls"]) == 1
 
 
-def test_invalid_answer_reprompts_before_saving():
-    result = run_installer(answers=["maybe", "y"])
+def test_invalid_answers_reprompt_before_saving():
+    result = run_installer(answers=["maybe", "no", "x", "yn"])
     assert result["success"]
     assert result["config"]["clipboard"]["auto_copy"] is True
-    assert sum(c["command"] == "prompt" for c in result["calls"]) == 2
+    assert result["config"]["notify"] is False
+    assert sum(c["command"] == "prompt" for c in result["calls"]) == 4
 
 
 @pytest.mark.parametrize("auto_copy", ["on", "off"])
@@ -222,6 +250,16 @@ def test_explicit_flag_does_not_prompt(auto_copy):
     result = run_installer(auto_copy=auto_copy)
     assert result["success"]
     assert result["config"]["clipboard"]["auto_copy"] is (auto_copy == "on")
+    assert result["config"]["notify"] is True
+    assert not any(c["command"] == "prompt" for c in result["calls"])
+
+
+@pytest.mark.parametrize(("auto_copy", "notify"), [(None, "off"), ("off", "on"), ("on", "off")])
+def test_notify_flag_is_saved_without_prompting(auto_copy, notify):
+    result = run_installer(auto_copy=auto_copy, notify=notify)
+    assert result["success"]
+    assert result["config"]["clipboard"]["auto_copy"] is (auto_copy != "off")
+    assert result["config"]["notify"] is (notify == "on")
     assert not any(c["command"] == "prompt" for c in result["calls"])
 
 
@@ -240,8 +278,9 @@ def run_installer(**overrides):
         "winget_exit": 0,
         "doctor_exit": 0,
         "setup_exit": 0,
-        "answers": ["n"],
+        "answers": ["n", "ny"],
         "auto_copy": None,
+        "notify": None,
         "prompt_error": False,
         "py": "missing",
         "signature": "valid",

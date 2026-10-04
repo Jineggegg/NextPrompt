@@ -51,10 +51,11 @@ codex
 
 重启已有 Codex 会话。在 `/hooks` 中检查并信任 NextPrompt 的 Stop hook。
 手动安装默认就会自动复制建议并弹出系统通知，无需运行 `$nextprompt-setup`。
-Windows 安装脚本会询问 `Choose Y or N [Y]`：选择 Y 或直接回车开启自动复制，
-选择 N 只显示建议。无人值守时显式传入 `-AutoCopy on` 或 `-AutoCopy off`。
-安装结束报告会按实际保存的选择显示 `Automatic clipboard copy: ON` 并
-说明新建议会自动复制，或显示 `OFF` 并说明仅展示建议。
+安装脚本会先显示推荐设置（自动复制、桌面通知都开）并询问 `Keep the recommended settings? [Y/n]`：
+直接回车或 Y 保留；N 之后输入两个字母，依次是自动复制和通知（`yn`、`ny`、`nn` 或 `yy`）。
+无人值守时显式传入 `-AutoCopy on|off` 和 `-Notify on|off`（macOS / Linux 为 `--auto-copy`、`--notify`）。
+安装结束报告会按实际保存的选择显示 `Automatic clipboard copy: ON/OFF` 和
+`Desktop notifications: ON/OFF`。
 安装脚本结束时会展示完整退出并重启 Codex、打开 `/hooks`、检查并信任
 NextPrompt Stop hook、完成一次普通对话的指引。安装不代表 Hook 已获信任，
 脚本也不会代替用户批准。直接使用 `codex plugin add` 的用户同样需要这些步骤，

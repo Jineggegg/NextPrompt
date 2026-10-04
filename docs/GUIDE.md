@@ -104,10 +104,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 
 The script verifies `codex`, installs Python 3.12 through the official `winget`
 source when required, refreshes the current process PATH, registers the marketplace,
-installs the plugin, runs Doctor and asks Y/N about automatic clipboard copy.
-Y or an empty answer enables automatic copy (default); N selects display only. The choice
-is saved and clearly reported at completion; other existing settings are preserved.
-For unattended installation, pass `-AutoCopy on` or `-AutoCopy off` explicitly.
+installs the plugin, runs Doctor and shows the recommended settings (automatic copy and
+desktop notifications both on). Enter or Y keeps them; N asks for two letters, copy then
+notifications (`yn`, `ny`, `nn` or `yy`). The choices are saved and reported at completion;
+other existing settings are preserved. For unattended installation, pass `-AutoCopy on|off`
+and `-Notify on|off`; a setting left out keeps the recommended value (on).
 Add `-Probe` to perform a synthetic inference
 test; it may consume model quota. The execution-policy override applies only to this
 PowerShell process and does not change the user's system policy. If `winget` is
@@ -119,10 +120,11 @@ macOS / Linux install:
 ```sh
 git clone https://github.com/Jineggegg/NextPrompt.git
 cd NextPrompt
-sh scripts/install.sh            # add --auto-copy on|off for unattended use, --probe to test inference
+sh scripts/install.sh            # add --auto-copy on|off --notify on|off for unattended use, --probe to test inference
 ```
 
-The script registers the plugin, runs the doctor, saves the clipboard choice and prints
+The script registers the plugin, runs the doctor, asks the same recommended-settings
+question, saves the copy and notification choices and prints
 the same restart, `/hooks` trust and usage steps as the Windows installer.
 
 Manual install (Codex prints no NextPrompt instructions; the one-time report appears at
@@ -161,28 +163,33 @@ checks.
 
 Setup is not a prerequisite and is not specific to the repository owner. New
 installations **copy each suggestion automatically and show a desktop notification**.
-The Windows installer asks for the clipboard preference and updates only that
-chosen setting; manual installs preserve existing settings. After loading the plugin
+The installers show the recommended copy and notification settings, let you change
+them, and update only those two settings; manual installs preserve existing settings. After loading the plugin
 and trusting its Hook,
 complete a normal conversation turn to see a useful next-prompt suggestion.
 
-After Doctor passes, the Windows installer asks:
+After Doctor passes, the installer asks:
 
 ```text
-NextPrompt clipboard preference
-Automatically copy suggested next prompts to your clipboard?
-Y = automatic copy (default); N = display only.
-Other local applications may read clipboard contents.
-Choose Y or N [Y]:
+推荐设置 / Recommended settings:
+  自动复制到剪贴板：开（推荐） / Automatic clipboard copy: ON (recommended)
+  桌面通知：开（推荐） / Desktop notifications: ON (recommended)
+其他本地程序可能读取剪贴板。 / Other local applications may read clipboard contents.
+使用推荐设置？ / Keep the recommended settings? [Y/n]:
 ```
 
-If you enter **Y** or press Enter, the completion guide includes:
+Answering **N** asks for two letters, the first for automatic copy and the second for
+desktop notifications (`y` = on, `n` = off): `yn` keeps copy on and turns notifications off,
+`ny` does the opposite, `nn` turns both off and `yy` keeps both on. A two-letter answer is
+also accepted at the first question, and anything else asks again.
+
+If you press Enter or answer **Y**, the completion guide includes:
 
 ```text
 NextPrompt installed successfully.
 Automatic clipboard copy: ON. New suggestions will be copied automatically.
-A desktop notification shows each suggestion when it is ready to paste.
-Your clipboard choice has been saved. Other existing settings are preserved.
+Desktop notifications: ON. A notification appears when a suggestion is ready.
+Your choices have been saved. Other existing settings are preserved.
 No additional setup is required.
 
 Finish in Codex:
@@ -199,13 +206,15 @@ Help: run $nextprompt-status or $nextprompt-doctor.
 If /hooks is unavailable, use a supported Codex client/CLI; automatic suggestions are not verified until the hook loads and is trusted.
 ```
 
-If you enter **N**, the mode line instead reads:
+If you turn a setting off, its line instead reads:
 
 ```text
 Automatic clipboard copy: OFF. Suggestions will be displayed only.
+Desktop notifications: OFF.
 ```
 
-An unavailable interactive terminal stops with guidance to use `-AutoCopy on|off`.
+Without an interactive terminal and without flags, the installer stops with guidance to
+use `-AutoCopy on|off` and `-Notify on|off`.
 If saving the preference fails, no successful
 installation report is printed. Enabling copy does not copy anything at installation:
 copying occurs only for valid suggestions after completed turns, once the Hook loads

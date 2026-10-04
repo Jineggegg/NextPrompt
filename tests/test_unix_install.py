@@ -42,7 +42,8 @@ cp "$FAKE_PYTHON_SOURCE" "$(dirname "$0")/python3"
 """
 
 
-def run_installer(*args, codex_exit=0, doctor_exit=0, extra=None):
+def run_installer(*args, codex_exit=0, doctor_exit=0, extra=None, answers=None):
+    """Run install.sh; with `answers`, stdin is a terminal that already holds those lines."""
     with tempfile.TemporaryDirectory(prefix="nextprompt-install-test-") as tmp:
         bin_dir = Path(tmp) / "bin"
         bin_dir.mkdir()
@@ -67,13 +68,24 @@ def run_installer(*args, codex_exit=0, doctor_exit=0, extra=None):
             "FAKE_DOCTOR_EXIT": str(doctor_exit),
             "FAKE_PYTHON_SOURCE": str(source),
         }
-        result = subprocess.run(
-            [SH, str(ROOT / "scripts/install.sh"), *args],
-            env=env,
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            timeout=30,
-        )
+        stdin, tty = subprocess.DEVNULL, None
+        if answers is not None:
+            # The installer only asks when stdin is a terminal.
+            master, tty = os.openpty()
+            os.write(master, "".join(answer + "\n" for answer in answers).encode())
+            stdin = tty
+        try:
+            result = subprocess.run(
+                [SH, str(ROOT / "scripts/install.sh"), *args],
+                env=env,
+                stdin=stdin,
+                capture_output=True,
+                timeout=30,
+            )
+        finally:
+            if tty is not None:
+                os.close(tty)
+                os.close(master)
         config_path = data / "config.json"
         return {
             "code": result.returncode,
@@ -92,8 +104,11 @@ def test_install_saves_choice_and_prints_usage(auto_copy):
     assert f"codex plugin marketplace add {ROOT}" in result["log"]
     assert "codex plugin add nextprompt@nextprompt" in result["log"]
     assert result["config"]["clipboard"]["auto_copy"] is (auto_copy == "on")
+    assert result["config"]["notify"] is True
     output = result["output"]
     assert "NextPrompt installed successfully" in output
+    assert "Desktop notifications: ON." in output
+    assert "Recommended settings" not in output
     assert ("Automatic clipboard copy: ON" in output) is (auto_copy == "on")
     assert ("Automatic clipboard copy: OFF" in output) is (auto_copy == "off")
     assert "Fully quit and reopen Codex" in output
@@ -126,10 +141,48 @@ def test_failure_never_reports_success(overrides):
     assert result["config"] is None
 
 
-def test_invalid_option_is_rejected_before_installing():
-    result = run_installer("--auto-copy", "maybe")
+@pytest.mark.parametrize("args", [("--auto-copy", "maybe"), ("--notify", "maybe")])
+def test_invalid_option_is_rejected_before_installing(args):
+    result = run_installer(*args)
     assert result["code"] != 0
     assert result["calls"] == []
+
+
+@pytest.mark.parametrize(
+    ("args", "auto_copy", "notify"),
+    [(("--notify", "off"), True, False), (("--auto-copy=off", "--notify=on"), False, True)],
+)
+def test_notify_flag_is_saved_without_prompting(args, auto_copy, notify):
+    result = run_installer(*args)
+    assert result["code"] == 0, result["output"]
+    assert result["config"]["clipboard"]["auto_copy"] is auto_copy
+    assert result["config"]["notify"] is notify
+    assert ("Desktop notifications: OFF." in result["output"]) is not notify
+    assert "Recommended settings" not in result["output"]
+
+
+@pytest.mark.parametrize(
+    ("answers", "auto_copy", "notify"),
+    [
+        ([""], True, True),
+        (["Y"], True, True),
+        (["n", "yn"], True, False),
+        (["no", "ny"], False, True),
+        (["n", "nn"], False, False),
+        (["n", "yy"], True, True),
+        (["YN"], True, False),
+        (["maybe", "n", "x", "nn"], False, False),
+    ],
+)
+def test_recommended_settings_prompt(answers, auto_copy, notify):
+    result = run_installer(answers=answers)
+    assert result["code"] == 0, result["output"]
+    assert result["config"]["clipboard"]["auto_copy"] is auto_copy
+    assert result["config"]["notify"] is notify
+    output = result["output"]
+    assert "Recommended settings" in output and "(recommended)" in output
+    assert ("Automatic clipboard copy: ON." in output) is auto_copy
+    assert ("Desktop notifications: ON." in output) is notify
 
 
 def test_macos_without_python_installs_it_with_homebrew():
