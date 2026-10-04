@@ -110,6 +110,17 @@ PREFIX = re.compile(
     r"次のプロンプト|次のステップ|提案|다음 프롬프트|다음 단계|제안)\s*[:：→]\s*",
     re.I,
 )
+# Prompts that hand the decision back to the assistant ("what should I do next?").
+# Sent back, they make the assistant ask again: a loop with no progress.
+META_PROMPT = re.compile(
+    r"(?:该|应该|要|可以|需要|能)(?:做|干|进行)(?:些|点)?什么|(?:下一步|接下来)(?:做|干)什么|"
+    r"做什么任务|有(?:什么|哪些)(?:任务|建议|可以做)|"
+    r"(?:該|應該|要|可以|需要|能)(?:做|幹|進行)(?:些|點)?什麼|做什麼任務|"
+    r"\bwhat (?:should|do|can|shall|could) (?:i|we|you) do\b|\bwhat(?:'s| is) next\b|"
+    r"\bwhat (?:task|should (?:i|we) work on)\b|\bany suggestions?\b|"
+    r"次(?:は|に)?何を|何をすれば|다음(?:에|은)? 뭐|무엇을 해야",
+    re.I,
+)
 # Assistant voice or chatter rather than a user's instruction.
 NOT_USER_VOICE = re.compile(
     r"[{}<>]|https?://|^#{1,6}\s|^I (?:have|will|can)\b|"
@@ -162,6 +173,8 @@ def sanitize(raw: str, max_words: int = 20, max_chars: int = 240) -> str | None:
     if _key(text) in GENERIC:
         return None
     if NOT_USER_VOICE.search(text):
+        return None
+    if META_PROMPT.search(text):
         return None
     if not any(c.isalpha() for c in text):
         return None
@@ -216,6 +229,11 @@ COMPLETED_WORK = (
         r"CI.*?(?:결과|완료).*?(?:확인|기다)",
     ),
 )
+
+
+def unhelpful(text: str) -> bool:
+    """Generic or decision-returning prompts that would not move the task forward."""
+    return _key(text) in GENERIC or bool(META_PROMPT.search(text))
 
 
 def obvious_repeat(suggestion: str, context: list[Message]) -> bool:

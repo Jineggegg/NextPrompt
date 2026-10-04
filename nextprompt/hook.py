@@ -15,7 +15,7 @@ from .notify import send_notification
 from .output import SuggestionResult, render, render_copy_status
 from .providers import CodexSuggestionProvider, ProviderUnavailable, SuggestionProvider
 from .redact import redact
-from .suggestion import obvious_repeat, sanitize
+from .suggestion import obvious_repeat, sanitize, unhelpful
 from .transcript import (
     CodexConversationAdapter,
     ConversationAdapter,
@@ -29,7 +29,8 @@ INLINE_PATH = Path(__file__).with_name("inline.txt")
 INLINE_REMINDER = (
     "NextPrompt: end this reply with the next-step line from the NextPrompt instruction, "
     "with its label and suggestion in the language the user writes in "
-    "(for example `Next prompt: …`, `下一步建议：…`, `次のプロンプト：…`)."
+    "(for example `Next prompt: …`, `下一步建议：…`, `次のプロンプト：…`), typos fixed. "
+    "Omit the line when this reply asks the user a question or waits for their choice."
 )
 _LABELS = sorted(
     {label.rstrip(" :：") for label in INLINE_LABELS.values()} | {"下一步", "下一句"},
@@ -44,6 +45,14 @@ INLINE_LINE = re.compile(
     re.I,
 )
 INLINE_MAX_CHARS = 500
+# A reply that ends by asking the user something waits for the user's own answer.
+ASKS_USER = re.compile(
+    r"[?？][\s*_`)）」』\"'”’]*$|"
+    r"(?:请|請)(?:告诉|告訴|选择|選擇|确认|確認|提供|说明|說明)|告诉我你|告訴我你|你(?:想|希望)(?:让我|讓我)?做|"
+    r"\b(?:please (?:choose|confirm|provide|tell me)|tell me (?:which|what)|which (?:one|option) "
+    r"(?:do|would) you)\b|教えてください|選んでください|알려 주세요|선택해 주세요",
+    re.I,
+)
 WELCOME_MARKER = ".welcome-v1"
 
 
@@ -157,6 +166,16 @@ def inline_suggestion(last_reply: object) -> str | None:
     return None
 
 
+def asks_user(last_reply: object) -> bool:
+    """Whether the reply, apart from any next-step line, ends by asking the user."""
+    if not isinstance(last_reply, str):
+        return False
+    body = [
+        line for line in last_reply.splitlines() if line.strip() and not INLINE_LINE.match(line)
+    ]
+    return any(ASKS_USER.search(line.strip()) for line in body[-2:])
+
+
 def handle_context(payload: object, *, store: ConfigStore | None = None) -> str | None:
     """Inline mode: developer context asking the root model to end with the line.
 
@@ -207,8 +226,15 @@ def handle_stop(
         cfg = store.load()
         if not cfg["enabled"] or cfg["trigger_mode"] != "every_turn":
             return None
+        last_reply = payload.get("last_assistant_message")
+        if asks_user(last_reply):
+            # Only the user can answer; a suggested prompt would make the assistant
+            # ask again and loop.
+            return None
         if cfg["source"] == "inline":
-            text = inline_suggestion(payload.get("last_assistant_message"))
+            text = inline_suggestion(last_reply)
+            if text and unhelpful(text):
+                return None
             if text:
                 # The prompt is written in the user's language.
                 language = resolve_language(cfg["language"], [text])

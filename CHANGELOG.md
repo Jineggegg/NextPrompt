@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Stop the question loop: when a reply ends by asking the user something (a question
+  mark, or asking them to choose, confirm or provide something), nothing is copied and
+  the fallback model does not run. The instruction now tells the Codex model to omit the
+  line in that case.
+- Prompts that hand the decision back to the assistant ("下一步该做什么任务", "what should
+  I do next", a bare "继续") are no longer copied or generated.
+- Both the inline instruction and the fallback model now fix the user's typos instead
+  of copying them into the suggestion.
+
 ## 0.1.10 — 2026-10-04
 
 - On the first trusted SessionStart, display a one-time installation and usage report
