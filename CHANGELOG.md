@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.12 — 2026-10-04
 
 - Add `scripts/install.sh` for macOS / Linux. Like the Windows installer it registers
   the plugin, runs the doctor, asks about clipboard copy (or takes `--auto-copy on|off`)
@@ -16,6 +16,8 @@
 - Both installers end with a bilingual (中文 / English) report: restart Codex, trust the
   Hooks, how suggestions look, how to turn off notifications and how to pause suggestions.
 - CI runs Python 3.9 to 3.14 on the self-hosted Linux runner.
+- Re-trust the hooks in `/hooks` after updating: the hook commands changed (new `py -3`
+  fallback).
 
 ## 0.1.11 — 2026-10-04
 
