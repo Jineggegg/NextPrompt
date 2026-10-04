@@ -34,6 +34,8 @@ DEFAULTS: dict[str, Any] = {
     "model": {"name": "gpt-5.6-luna", "reasoning": "low", "timeout_seconds": 15},
     "suggestion": {"max_words": 20, "max_chars": 240},
     "privacy": {"redact_secrets": True},
+    # Local suggestion counts and hashes only, never text (see stats.py).
+    "stats": True,
 }
 
 
@@ -71,6 +73,7 @@ def validate_config(raw: object) -> dict[str, Any]:
     for value in (
         cfg["enabled"],
         cfg["notify"],
+        cfg["stats"],
         cfg["privacy"]["redact_secrets"],
         cfg["clipboard"]["osc52_fallback"],
     ):

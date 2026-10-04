@@ -23,6 +23,11 @@
   counts; quotes in ordinary sentences or dialogue do not.
 - A question mark at the end of a story or blurb no longer blocks the copy when the reply
   ends with a suggestion; explicit choices ("你想用哪个？", "Which branch…?") still do.
+- `$nextprompt-status` shows local counts: how many replies suggested something and how many
+  suggestions were sent as is, sent with more words, or not used, matched against the next
+  prompt in the same session. Only counts and short one-way hashes are stored (`.stats.json`),
+  never text. `setup --stats off` turns this off and deletes the counts; `--stats reset`
+  clears them.
 - No need to re-trust the hooks: the hook commands are unchanged.
 
 ## 0.1.13 — 2026-10-04

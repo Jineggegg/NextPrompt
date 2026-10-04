@@ -124,9 +124,11 @@ the previous behavior (no line in replies, a separate lightweight request), set 
 
 速度因模型和网络而异；Token 用量尚未完整计量，独立请求会消耗模型额度。
 仅使用最近的对话，不扫描项目，不保存对话副本；剪贴板里只放建议正文，可随时关闭自动复制。
+`$nextprompt-status` 会显示本机统计：给了多少条建议、你原样发送 / 补充后发送 / 没用的各有多少。只记次数和无法还原的短哈希，不记任何文字；用 `$nextprompt-setup` 设置 `--stats off` 关闭，`--stats reset` 清零。
 
 Speed varies by model and network. Full token usage has not been measured; separate requests consume model quota.
 Only recent conversation is used: no project scanning or saved conversation copies. Only the suggestion text is copied, and auto-copy can be turned off.
+`$nextprompt-status` shows local counts: how many replies suggested something, and how many suggestions you sent as is, sent with more words, or did not use. Only counts and short one-way hashes are kept, never text; turn this off with `--stats off` or clear it with `--stats reset` through `$nextprompt-setup`.
 
 - [完整使用说明 / Full guide](docs/GUIDE.md)
 - [中文安装与排查 / Chinese installation guide](docs/LOCAL_TEST.md)

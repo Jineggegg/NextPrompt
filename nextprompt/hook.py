@@ -11,6 +11,7 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
+from . import stats
 from .clipboard import ClipboardAdapter, SystemClipboardAdapter
 from .config import ConfigStore
 from .i18n import INLINE_LABELS, detect_language, go_ahead, message, resolve_language
@@ -353,6 +354,8 @@ def handle_context(payload: object, *, store: ConfigStore | None = None) -> str 
     try:
         store = store or ConfigStore()
         cfg = store.load()
+        if event == "UserPromptSubmit" and cfg["stats"]:
+            stats.record_prompt(store.root, payload.get("session_id"), payload.get("prompt"))
         if cfg["enabled"] and cfg["trigger_mode"] == "every_turn" and cfg["source"] == "inline":
             if event == "UserPromptSubmit":
                 return inline_reminder(payload.get("prompt"), payload.get("session_id"), store)
@@ -389,15 +392,15 @@ def handle_stop(
         if not cfg["enabled"] or cfg["trigger_mode"] != "every_turn":
             return None
         last_reply = payload.get("last_assistant_message")
-        if asks_user(last_reply):
-            # Only the user can answer; a suggested prompt would make the assistant
-            # ask again and loop.
-            return None
         # Without the reply text, whether the model suggested anything is unknown.
         if cfg["source"] == "inline" and isinstance(last_reply, str):
-            text = inline_suggestion(last_reply)
+            # Only the user can answer a question; a suggested prompt would make the
+            # assistant ask again and loop.
+            text = None if asks_user(last_reply) else inline_suggestion(last_reply)
             if text and unhelpful(text):
-                return None
+                text = None
+            if cfg["stats"]:
+                stats.record_reply(store.root, payload.get("session_id"), text)
             if not text:
                 # The model chose not to suggest anything, or its line is unsafe to
                 # copy; a fallback suggestion would override either decision.
@@ -407,6 +410,8 @@ def handle_stop(
             return deliver(
                 go_ahead(text), cfg, "inline", "root", 1, clipboard, language, cfg["notify"], True
             )
+        if asks_user(last_reply):
+            return None
         path = payload.get("transcript_path")
         if not isinstance(path, str) or not path:
             return None

@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import stats
 from .clipboard import SystemClipboardAdapter
 from .config import DEFAULTS, ConfigError, ConfigStore
 from .hook import generate_suggestion
@@ -30,9 +31,15 @@ VERSIONED_PYTHONS = tuple(f"python3.{minor}" for minor in range(15, 8, -1))
 HOOK_INTERPRETERS = (("python",), ("python3",), ("py", "-3"), *((n,) for n in VERSIONED_PYTHONS))
 
 
-def status(cfg: dict[str, Any]) -> str:
+def status(cfg: dict[str, Any], root: Path | None = None) -> str:
     clipboard = SystemClipboardAdapter(osc52_fallback=cfg["clipboard"]["osc52_fallback"])
     auto = cfg["clipboard"]["auto_copy"]
+    if not cfg["stats"]:
+        counts = ["Stats:            Off"]
+    elif root is None:
+        counts = []
+    else:
+        counts = ["Stats:            On (local counts only, no text)", *stats.summary(root)]
     return "\n".join(
         [
             "NextPrompt",
@@ -53,6 +60,7 @@ def status(cfg: dict[str, Any]) -> str:
             f"Secret redaction: {'Enabled' if cfg['privacy']['redact_secrets'] else 'Disabled'}",
             f"Clipboard:        {detect_platform().label}",
             f"Backend:          {clipboard.backend_name()}",
+            *counts,
         ]
     )
 
@@ -186,6 +194,7 @@ def parser() -> argparse.ArgumentParser:
     setup.add_argument("--trigger-mode", choices=("every_turn", "manual"))
     setup.add_argument("--language", choices=("auto", *LANGUAGES))
     setup.add_argument("--source", choices=("model", "inline"))
+    setup.add_argument("--stats", choices=("on", "off", "reset"))
     for command in ("status", "enable", "disable"):
         commands.add_parser(command)
     check = commands.add_parser("doctor")
@@ -216,6 +225,7 @@ def run(args: argparse.Namespace) -> int:
                 "trigger_mode",
                 "language",
                 "source",
+                "stats",
             )
         )
         if args.auto_copy is None and not settings_requested:
@@ -256,9 +266,13 @@ def run(args: argparse.Namespace) -> int:
                 cfg["source"] = args.source
             if args.notify is not None:
                 cfg["notify"] = args.notify == "on"
+            if args.stats is not None:
+                cfg["stats"] = args.stats != "off"
 
         cfg = store.update(configure)
-        print("NextPrompt configured.\n" + status(cfg))
+        if args.stats in ("off", "reset"):
+            stats.reset(store.root)
+        print("NextPrompt configured.\n" + status(cfg, store.root))
         print(
             "Next suggestions will be copied automatically after completed Codex turns."
             if cfg["clipboard"]["auto_copy"] is not False
@@ -269,7 +283,7 @@ def run(args: argparse.Namespace) -> int:
         store.update(lambda cfg: cfg.update(enabled=enabled))
         print(f"NextPrompt {'enabled' if enabled else 'disabled'}.")
     elif args.command == "status":
-        print(status(store.load()))
+        print(status(store.load(), store.root))
     elif args.command == "doctor":
         report = doctor(store, args.probe)
         print(report.text)

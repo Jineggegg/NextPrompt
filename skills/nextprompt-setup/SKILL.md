@@ -36,6 +36,7 @@ Do not pipe an interactive question into a tool. The flags work non-interactivel
 Optional user-requested settings: `--enabled on|off`, `--model MODEL`,
 `--context-messages 1..5`, `--max-words 1..20`, `--redaction on|off`,
 `--osc52 on|off`, `--notify on|off` (desktop notification), `--trigger-mode every_turn|manual`,
+`--stats on|off|reset` (local counts of suggestions shown and used; `off` also deletes them),
 `--language auto|en|zh|zh-TW|ja|ko|es|fr|de|pt|ru` (labels; `auto` follows the
 user's latest message), `--source inline|model` (`inline`, the default: when a next step is
 worth it, the Codex model ends the reply with a varied `→` line quoting the user's next prompt

@@ -13,4 +13,5 @@ If those are older than Python 3.9, use the newest `python3.X` command available
 
 Use `PLUGIN_DATA` if available; otherwise the default official data path is for
 marketplace `nextprompt`. For a different marketplace supply its official
-`--data-dir` before `status`. Display the output. Do not read transcripts or credentials.
+`--data-dir` before `status`. Display the output; its Suggestions and Used lines are local
+counts of suggestions shown and used. Do not read transcripts or credentials.
