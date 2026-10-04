@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.11 — 2026-10-04
 
 - Stop the question loop: when a reply ends by asking the user something (a question
   mark, or asking them to choose, confirm or provide something), nothing is copied and
