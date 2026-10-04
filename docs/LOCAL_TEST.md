@@ -59,6 +59,7 @@ Windows 安装脚本会询问 `Choose Y or N [Y]`：选择 Y 或直接回车开�
 NextPrompt Stop hook、完成一次普通对话的指引。安装不代表 Hook 已获信任，
 脚本也不会代替用户批准。直接使用 `codex plugin add` 的用户同样需要这些步骤，
 但 Codex 自带命令不会展示本脚本的定制提示；请按 README 的安装后指南操作。
+macOS / Linux 可运行 `sh scripts/install.sh`，安装结束时会显示同样的中英文说明。
 只下载 skills 不会注册自动 Hook，需要安装完整插件。
 只有想关闭自动复制、关闭通知（`--notify off`）或修改其他设置时才运行 `$nextprompt-setup`。
 脚本仅修改用户本次选择的剪贴板配置，其他已有设置保留。安装时不会立即复制任何内容，也不会

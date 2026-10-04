@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add `scripts/install.sh` for macOS / Linux. Like the Windows installer it registers
+  the plugin, runs the doctor, asks about clipboard copy (or takes `--auto-copy on|off`)
+  and ends with a bilingual usage report, so instructions show right after installation
+  instead of only at the first trusted Codex session.
+
 ## 0.1.11 — 2026-10-04
 
 - Stop the question loop: when a reply ends by asking the user something (a question

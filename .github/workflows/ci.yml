@@ -6,20 +6,15 @@ permissions:
   contents: read
 jobs:
   tests:
+    name: tests (linux, ${{ matrix.python }})
     strategy:
       fail-fast: false
       matrix:
-        # linux runs on the self-hosted runner on AJ's machine (no Actions minutes).
-        os: [linux, windows-latest, macos-latest]
         python: ['3.9', '3.10', '3.12']
-        # macOS minutes cost 10x on private repos; keep only the Python 3.9
-        # that macOS bundles, the case that broke in 0.1.6.
-        exclude:
-          - os: macos-latest
-            python: '3.10'
-          - os: macos-latest
-            python: '3.12'
-    runs-on: ${{ matrix.os == 'linux' && fromJSON('["self-hosted", "linux", "nextprompt"]') || matrix.os }}
+    # Every job runs on the self-hosted Linux runner on AJ's machine (no Actions
+    # minutes). Windows and macOS hosted runners are off; their installer tests
+    # skip on Linux, so check those platforms locally before a release.
+    runs-on: [self-hosted, linux, nextprompt]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
