@@ -25,6 +25,8 @@ DEFAULTS: dict[str, Any] = {
     "enabled": True,
     "trigger_mode": "every_turn",
     "language": "auto",
+    # "model": a separate lightweight request; "inline": the root model writes it.
+    "source": "model",
     "clipboard": {"auto_copy": True, "osc52_fallback": False},
     "notify": True,
     "context": {"last_messages": 5, "max_chars_per_message": 2500, "max_total_chars": 8000},
@@ -78,6 +80,8 @@ def validate_config(raw: object) -> dict[str, Any]:
         raise ConfigError("invalid clipboard consent")
     if cfg["trigger_mode"] not in ("every_turn", "manual", "code_change_only"):
         raise ConfigError("invalid trigger mode")
+    if cfg["source"] not in ("model", "inline"):
+        raise ConfigError("invalid suggestion source")
     if cfg["language"] not in ("auto", *LANGUAGES):
         raise ConfigError("invalid language")
     limits = [

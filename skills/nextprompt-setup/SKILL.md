@@ -36,6 +36,8 @@ Optional user-requested settings: `--enabled on|off`, `--model MODEL`,
 `--context-messages 1..5`, `--max-words 1..20`, `--redaction on|off`,
 `--osc52 on|off`, `--notify on|off` (desktop notification), `--trigger-mode every_turn|manual`,
 `--language auto|en|zh|zh-TW|ja|ko|es|fr|de|pt|ru` (labels; `auto` follows the
-user's latest message). OSC 52 defaults off and is
+user's latest message), `--source model|inline` (`inline`: the Codex model ends each
+reply with a `Next prompt:` line that is copied with no extra request; takes effect
+in new or resumed sessions). OSC 52 defaults off and is
 unverified best effort; clipboard contents can be read by other local applications.
 Show the CLI's concise configuration result. Never generate or execute a coding task.

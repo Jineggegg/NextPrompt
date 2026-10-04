@@ -32,6 +32,12 @@ def status(cfg: dict[str, Any]) -> str:
             f"Enabled:          {'Yes' if cfg['enabled'] else 'No'}",
             f"Auto-copy:        {'No (display only)' if auto is False else 'Yes'}",
             f"Notification:     {'Yes' if cfg['notify'] else 'No'}",
+            "Source:           "
+            + (
+                "inline (your Codex model writes it)"
+                if cfg["source"] == "inline"
+                else "model (separate lightweight request)"
+            ),
             f"Model:            {cfg['model']['name']} (configured)",
             "Language:         "
             + ("auto (follows your messages)" if cfg["language"] == "auto" else cfg["language"]),
@@ -87,7 +93,7 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     try:
         manifest = json.loads((root / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         hooks = json.loads((root / "hooks" / "hooks.json").read_text(encoding="utf-8"))
-        valid = manifest["name"] == "nextprompt" and set(hooks["hooks"]) == {"Stop"}
+        valid = manifest["name"] == "nextprompt" and set(hooks["hooks"]) == {"SessionStart", "Stop"}
     except (OSError, ValueError, KeyError):
         valid = False
     interpreter = hook_interpreter()
@@ -99,7 +105,7 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     )
     rows += [
         f"Plugin              {'✓' if valid else '✗'} bundle",
-        f"Hook                {'✓' if valid else '✗'} Stop (review trust in /hooks)",
+        f"Hook                {'✓' if valid else '✗'} SessionStart + Stop (review trust in /hooks)",
         "Re-entry protection ✓ hooks/plugins disabled + NEXTPROMPT_INTERNAL",
     ]
     provider = CodexSuggestionProvider(cfg["model"], store.root)
@@ -171,6 +177,7 @@ def parser() -> argparse.ArgumentParser:
     setup.add_argument("--notify", choices=("on", "off"))
     setup.add_argument("--trigger-mode", choices=("every_turn", "manual"))
     setup.add_argument("--language", choices=("auto", *LANGUAGES))
+    setup.add_argument("--source", choices=("model", "inline"))
     for command in ("status", "enable", "disable"):
         commands.add_parser(command)
     check = commands.add_parser("doctor")
@@ -200,6 +207,7 @@ def run(args: argparse.Namespace) -> int:
                 "notify",
                 "trigger_mode",
                 "language",
+                "source",
             )
         )
         if args.auto_copy is None and not settings_requested:
@@ -236,6 +244,8 @@ def run(args: argparse.Namespace) -> int:
                 cfg["trigger_mode"] = args.trigger_mode
             if args.language is not None:
                 cfg["language"] = args.language
+            if args.source is not None:
+                cfg["source"] = args.source
             if args.notify is not None:
                 cfg["notify"] = args.notify == "on"
 

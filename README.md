@@ -40,7 +40,7 @@ When asked about clipboard copy, **Y or Enter enables auto-copy (default); N kee
 安装结束后 / After installation:
 
 1. 完全退出并重新打开 Codex。 / Quit and reopen Codex.
-2. 打开 `/hooks`，检查并信任 NextPrompt 的 Stop Hook。 / Open `/hooks`, review and trust the NextPrompt Stop Hook.
+2. 打开 `/hooks`，检查并信任 NextPrompt 的 SessionStart 和 Stop Hook。 / Open `/hooks`, review and trust the NextPrompt SessionStart and Stop Hooks.
 3. 完成一轮普通对话；生成建议后，粘贴、检查，再发送。 / Complete a normal turn, then paste, review and send the suggestion.
 
 不需要另行运行 setup。想修改偏好时使用 `$nextprompt-setup`。
@@ -83,6 +83,17 @@ Run the full regression suite and review the final diff.
 剪贴板里只有建议正文；复制失败时保留建议供手动复制。想固定界面语言，用 `$nextprompt-setup` 设置 `--language`（如 `zh`、`en`、`ja`）。
 
 Only the suggestion text is copied; if copying fails, the suggestion stays on screen to copy manually. To pin the label language, set `--language` (for example `zh`, `en`, `ja`) with `$nextprompt-setup`.
+
+## 由当前模型直接写建议（可选）/ Let your Codex model write it (optional)
+
+`$nextprompt-setup` 设置 `--source inline` 后，NextPrompt 在会话开始时请 Codex 当前模型在每次回答最后加一行
+`Next prompt: …`，回答结束时 Hook 直接把这一行复制到剪贴板，不再另外请求轻量模型，几乎没有等待，也能看到完整对话。
+这行会出现在回答里，并占用主模型少量输出；某次回答没写这一行时，自动退回到轻量模型生成。默认仍是 `--source model`。
+
+With `--source inline`, NextPrompt asks your Codex model at session start to end each reply with a
+`Next prompt: …` line; the Stop Hook copies that line with no separate model request, so there is almost no wait
+and the suggestion sees the whole conversation. The line stays visible in the reply and uses a few output tokens;
+when a reply has no such line, NextPrompt falls back to the lightweight model. The default remains `--source model`.
 
 ## 常用命令 / Commands
 

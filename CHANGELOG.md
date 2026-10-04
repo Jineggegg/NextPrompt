@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Optional inline mode (`setup --source inline`): a SessionStart Hook asks the Codex model
+  to end each reply with a `Next prompt:` line, and the Stop Hook copies that line without
+  a separate model request. Replies without a usable line fall back to the lightweight
+  model. The default stays `--source model`.
+
 ## 0.1.8 — 2026-10-04
 
 - Automatic clipboard copy is now on by default, including manual installs; the Windows

@@ -20,7 +20,7 @@ nextprompt = "nextprompt.cli:main"
 packages = ["nextprompt"]
 
 [tool.setuptools.package-data]
-nextprompt = ["instruction.txt"]
+nextprompt = ["instruction.txt", "inline.txt"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
