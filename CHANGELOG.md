@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5 — 2026-10-04
+
+- Unify repository, package, marketplace, installation commands and display
+  names as NextPrompt; the plugin is now installed as `nextprompt@nextprompt`.
+- Simplify the README and move detailed reference material into `docs/GUIDE.md`.
+
 ## 0.1.4
 
 - Keep the NextPrompt product name and existing six skill commands unchanged.

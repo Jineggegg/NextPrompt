@@ -195,7 +195,7 @@ def run_installer(**overrides):
         "NEXTPROMPT_INSTALL_TEST_CASE": json.dumps(case),
         "NEXTPROMPT_INSTALL_TEST_SCRIPT": str(ROOT / "scripts/install.ps1"),
     }
-    with tempfile.TemporaryDirectory(prefix="prompty-install-test-") as data_dir:
+    with tempfile.TemporaryDirectory(prefix="nextprompt-install-test-") as data_dir:
         env.update(NEXTPROMPT_TEST_PYTHON=sys.executable, NEXTPROMPT_TEST_DATA=data_dir)
         result = subprocess.run(
             [SHELL, "-NoProfile", "-NonInteractive", "-Command", HARNESS],

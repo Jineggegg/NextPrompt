@@ -1,6 +1,6 @@
 # 本地安装与验证
 
-GitHub 交付目标是 `Jineggegg/Codex-Prompty` 私有仓库。仓库创建并推送完成后，
+GitHub 交付目标是 `Jineggegg/NextPrompt` 私有仓库。仓库创建并推送完成后，
 使用仓库所有者的 GitHub 账号克隆。运行环境需要 Codex CLI 0.159.0+，
 并且 `codex exec --help` 必须具有
 `--ignore-user-config`、`--ignore-rules`、`--ephemeral`、`--disable`。运行时需要
@@ -10,8 +10,8 @@ PATH 中的 `python` 为 Python 3.10+；不要把凭据写进 Git URL、脚本�
 
 ```powershell
 gh auth login
-gh repo clone Jineggegg/Codex-Prompty
-Set-Location Codex-Prompty
+gh repo clone Jineggegg/NextPrompt
+Set-Location NextPrompt
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
@@ -26,8 +26,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 
 ```sh
 gh auth login
-gh repo clone Jineggegg/Codex-Prompty
-cd Codex-Prompty
+gh repo clone Jineggegg/NextPrompt
+cd NextPrompt
 codex --version
 python --version
 codex login status
@@ -47,7 +47,7 @@ Doctor。`--probe` 只发送固定的模拟对话，可能消耗自己的模型�
 
 ```sh
 codex plugin marketplace add .
-codex plugin add nextprompt@codex-prompty
+codex plugin add nextprompt@nextprompt
 codex
 ```
 
@@ -115,11 +115,11 @@ NEXTPROMPT_RUN_CLI_INTEGRATION=1 python -m pytest -q
 `git pull` 后，移除再安装插件以刷新缓存，并重新检查 hook 信任。
 
 ```sh
-codex plugin remove nextprompt@codex-prompty
-codex plugin add nextprompt@codex-prompty
+codex plugin remove nextprompt@nextprompt
+codex plugin add nextprompt@nextprompt
 ```
 
-彻底卸载时再运行 `codex plugin marketplace remove codex-prompty`。
+彻底卸载时再运行 `codex plugin marketplace remove nextprompt`。
 如需删除配置，只删除本插件的
-`$CODEX_HOME/plugins/data/nextprompt-codex-prompty`；默认 `CODEX_HOME` 为
+`$CODEX_HOME/plugins/data/nextprompt-nextprompt`；默认 `CODEX_HOME` 为
 `~/.codex`。不要删除整个 Codex home 或项目目录。

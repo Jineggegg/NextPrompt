@@ -99,12 +99,12 @@ if ($null -eq $codex) {
 Write-Host "Python $($python.Version) ready."
 & $codex.Source plugin marketplace add $repoRoot
 if ($LASTEXITCODE -ne 0) {
-    throw "Could not register the local codex-prompty marketplace."
+    throw "Could not register the local nextprompt marketplace."
 }
 
-& $codex.Source plugin add "nextprompt@codex-prompty"
+& $codex.Source plugin add "nextprompt@nextprompt"
 if ($LASTEXITCODE -ne 0) {
-    throw "Could not install nextprompt@codex-prompty."
+    throw "Could not install nextprompt@nextprompt."
 }
 
 $doctorArgs = @((Join-Path $repoRoot "scripts\doctor.py"))

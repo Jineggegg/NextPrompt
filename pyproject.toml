@@ -3,8 +3,8 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "codex-prompty"
-version = "0.1.4"
+name = "nextprompt"
+version = "0.1.5"
 description = "NextPrompt for Codex: lightweight next-step suggestions"
 requires-python = ">=3.10"
 license = {text = "MIT"}

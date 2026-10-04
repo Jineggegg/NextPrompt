@@ -63,7 +63,7 @@ def test_official_data_directory(monkeypatch, tmp_path):
     monkeypatch.delenv("PLUGIN_DATA", raising=False)
     monkeypatch.delenv("NEXTPROMPT_MARKETPLACE", raising=False)
     monkeypatch.setenv("CODEX_HOME", str(tmp_path))
-    assert data_directory() == tmp_path / "plugins/data/nextprompt-codex-prompty"
+    assert data_directory() == tmp_path / "plugins/data/nextprompt-nextprompt"
     monkeypatch.setenv("PLUGIN_DATA", str(tmp_path / "official-data"))
     assert data_directory() == (tmp_path / "official-data").resolve()
 

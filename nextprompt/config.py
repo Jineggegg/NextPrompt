@@ -38,7 +38,7 @@ def data_directory() -> Path:
     if value := os.environ.get("PLUGIN_DATA"):
         return Path(value).expanduser().resolve()
     # Official legacy plugin directory, required for working hooks in Codex 0.159.
-    marketplace = os.environ.get("NEXTPROMPT_MARKETPLACE", "codex-prompty")
+    marketplace = os.environ.get("NEXTPROMPT_MARKETPLACE", "nextprompt")
     return codex_home() / "plugins" / "data" / f"nextprompt-{marketplace}"
 
 

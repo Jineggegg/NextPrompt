@@ -25,7 +25,7 @@ text to 8000 characters before invoking the CLI; redact recognizable credentials
 before passing them. The CLI repeats redaction and strict limits before inference.
 
 Use `PLUGIN_DATA` if available. Otherwise the official default data path is for
-marketplace `codex-prompty`; for another marketplace pass its official
+marketplace `nextprompt`; for another marketplace pass its official
 `--data-dir` before `suggest`. Show the CLI output. New installations work in
 display-only mode without setup; never assume clipboard consent.
 A model failure may yield no output.

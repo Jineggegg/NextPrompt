@@ -9,7 +9,7 @@ the containing directory). Run:
 `python "<plugin root>/scripts/nextprompt.py" doctor`
 
 The CLI uses `PLUGIN_DATA` or the official data path for marketplace
-`codex-prompty`. For a different marketplace supply its official `--data-dir`
+`nextprompt`. For a different marketplace supply its official `--data-dir`
 before the command. This checks login status and model discovery without reading
 credential files or conversation content. A login status check does not validate
 the token or prove entitlement. A catalog entry does not prove inference access.

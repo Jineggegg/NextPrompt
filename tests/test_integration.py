@@ -162,7 +162,7 @@ def command(args, cwd):
 def install(cwd):
     result = command(["plugin", "marketplace", "add", str(ROOT), "--json"], cwd)
     assert result.returncode == 0, result.stderr
-    result = command(["plugin", "add", "nextprompt@codex-prompty", "--json"], cwd)
+    result = command(["plugin", "add", "nextprompt@nextprompt", "--json"], cwd)
     assert result.returncode == 0, result.stderr
     return json.loads(result.stdout)
 
@@ -172,11 +172,9 @@ def test_official_plugin_install_remove_and_data_path(real_cli):
     expected = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())["version"]
     assert metadata["version"] == expected
     assert (Path(metadata["installedPath"]) / "hooks/stop.py").exists()
-    result = command(
-        ["plugin", "list", "--marketplace", "codex-prompty", "--json"], real_cli["cwd"]
-    )
+    result = command(["plugin", "list", "--marketplace", "nextprompt", "--json"], real_cli["cwd"])
     assert json.loads(result.stdout)["installed"][0]["enabled"] is True
-    result = command(["plugin", "remove", "nextprompt@codex-prompty", "--json"], real_cli["cwd"])
+    result = command(["plugin", "remove", "nextprompt@nextprompt", "--json"], real_cli["cwd"])
     assert result.returncode == 0
 
 
@@ -271,7 +269,7 @@ def test_real_stop_hook_one_child_no_recursive_turn(real_cli, tmp_path, monkeypa
     assert len(rollouts) == 1
     output = json.loads(receipt.read_bytes())
     assert output == {"systemMessage": "Next prompt:\n" + prompt}
-    assert store.root == real_cli["home"] / "plugins/data/nextprompt-codex-prompty"
+    assert store.root == real_cli["home"] / "plugins/data/nextprompt-nextprompt"
 
 
 def test_real_stop_model_failure_root_still_succeeds(real_cli):
