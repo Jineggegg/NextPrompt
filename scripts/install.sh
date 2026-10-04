@@ -37,15 +37,63 @@ case "$auto_copy" in
 esac
 
 # Hooks run `python` or `python3`, so the installer accepts the same commands.
-python=""
-for candidate in python3 python; do
-    if command -v "$candidate" >/dev/null 2>&1 &&
-        "$candidate" -c "import sys; sys.exit(sys.version_info < (3, 9))" >/dev/null 2>&1; then
-        python=$candidate
-        break
+find_python() {
+    python=""
+    for candidate in python3 python; do
+        if command -v "$candidate" >/dev/null 2>&1 &&
+            "$candidate" -c "import sys; sys.exit(sys.version_info < (3, 9))" >/dev/null 2>&1; then
+            python=$candidate
+            return 0
+        fi
+    done
+    return 1
+}
+
+as_root() {
+    if [ "$(id -u)" = 0 ]; then
+        "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+    else
+        fail "Installing Python needs administrator rights, and sudo is not available. Install Python 3.9+ yourself, then rerun this script."
     fi
-done
-[ -n "$python" ] || fail "Python 3.9+ is required as python3 or python. Install it, then rerun this script."
+}
+
+# Install Python 3.9+ with the system's own package manager; nothing is downloaded by hand.
+install_python() {
+    echo "未找到 Python 3.9+，正在自动安装… / Python 3.9+ was not found. Installing it..."
+    if [ "$(uname -s)" = Darwin ]; then
+        if command -v brew >/dev/null 2>&1; then
+            brew install python3 || fail "Homebrew could not install Python."
+        else
+            # Apple's Command Line Tools include /usr/bin/python3 (3.9+).
+            xcode-select --install >/dev/null 2>&1 || true
+            fail "macOS 正在弹窗安装命令行工具（含 Python），装好后请重新运行本脚本。 / macOS is installing the Command Line Tools (which include Python) in a separate window. Finish that, then rerun this script."
+        fi
+    elif command -v apt-get >/dev/null 2>&1; then
+        as_root apt-get update && as_root apt-get install -y python3
+    elif command -v dnf >/dev/null 2>&1; then
+        as_root dnf install -y python3
+    elif command -v yum >/dev/null 2>&1; then
+        as_root yum install -y python3
+    elif command -v zypper >/dev/null 2>&1; then
+        as_root zypper --non-interactive install python3
+    elif command -v pacman >/dev/null 2>&1; then
+        as_root pacman -S --noconfirm --needed python
+    elif command -v apk >/dev/null 2>&1; then
+        as_root apk add python3
+    elif command -v brew >/dev/null 2>&1; then
+        brew install python3
+    else
+        fail "No supported package manager was found. Install Python 3.9+ yourself, then rerun this script."
+    fi || fail "Python could not be installed automatically. Install Python 3.9+ yourself, then rerun this script."
+    hash -r 2>/dev/null || true
+}
+
+if ! find_python; then
+    install_python
+    find_python || fail "Python was installed, but no python3 or python command with 3.9+ is on PATH. Open a new terminal, then rerun this script."
+fi
 command -v codex >/dev/null 2>&1 || fail "Codex CLI is required. Install or repair Codex, then rerun this script."
 
 echo "Python ready: $("$python" -c "import sys; print('.'.join(map(str, sys.version_info[:3])))")"
@@ -95,4 +143,5 @@ echo "   Next prompt: Run the full regression suite and review the final diff."
 echo "   建议不会自动发送，请检查后自己粘贴发送。 / It is never sent automatically; review, paste and send it yourself."
 echo ""
 echo "修改设置或关闭通知：\$nextprompt-setup / Change settings or turn off notifications: \$nextprompt-setup"
+echo "暂停或恢复建议：\$nextprompt-disable、\$nextprompt-enable / Pause or resume suggestions: \$nextprompt-disable or \$nextprompt-enable"
 echo "查看状态或排查：\$nextprompt-status、\$nextprompt-doctor / Help: \$nextprompt-status or \$nextprompt-doctor"

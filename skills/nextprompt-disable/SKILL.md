@@ -8,7 +8,7 @@ its containing directory). Run:
 
 `python "<plugin root>/scripts/nextprompt.py" disable`
 
-Use `python3` instead of `python` if `python` is unavailable.
+Use `python3` instead of `python` if `python` is unavailable, or `py -3` on Windows if neither works.
 
 The CLI uses `PLUGIN_DATA` or the official data path for marketplace
 `nextprompt`. For a different marketplace supply its official `--data-dir`

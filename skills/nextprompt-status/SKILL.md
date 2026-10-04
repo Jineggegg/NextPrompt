@@ -8,7 +8,7 @@ directories above the containing directory). Run:
 
 `python "<plugin root>/scripts/nextprompt.py" status`
 
-Use `python3` instead of `python` if `python` is unavailable.
+Use `python3` instead of `python` if `python` is unavailable, or `py -3` on Windows if neither works.
 
 Use `PLUGIN_DATA` if available; otherwise the default official data path is for
 marketplace `nextprompt`. For a different marketplace supply its official

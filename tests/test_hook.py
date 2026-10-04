@@ -299,11 +299,14 @@ def run_shipped_hook(tmp_path, interpreters):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     for name in interpreters:
+        # The py launcher takes a leading `-3`; its shim drops that argument.
         if os.name == "nt":
-            (bin_dir / f"{name}.cmd").write_text(f'@"{sys.executable}" %*\r\n')
+            args = "%2 %3" if name == "py" else "%*"
+            (bin_dir / f"{name}.cmd").write_text(f'@"{sys.executable}" {args}\r\n')
         else:
+            shift = "shift\n" if name == "py" else ""
             shim = bin_dir / name
-            shim.write_text(f'#!/bin/sh\nexec "{sys.executable}" "$@"\n')
+            shim.write_text(f'#!/bin/sh\n{shift}exec "{sys.executable}" "$@"\n')
             shim.chmod(0o755)
     env = {
         **os.environ,
@@ -321,7 +324,9 @@ def run_shipped_hook(tmp_path, interpreters):
     return subprocess.run(args, input=b"[]", capture_output=True, env=env, cwd=tmp_path, timeout=10)
 
 
-@pytest.mark.parametrize("interpreters", [["python"], ["python3"]], ids=["python", "python3-only"])
+@pytest.mark.parametrize(
+    "interpreters", [["python"], ["python3"], ["py"]], ids=["python", "python3-only", "py-only"]
+)
 def test_shipped_hook_command_finds_an_interpreter(tmp_path, interpreters):
     result = run_shipped_hook(tmp_path, interpreters)
     assert result.returncode == 0, result.stderr

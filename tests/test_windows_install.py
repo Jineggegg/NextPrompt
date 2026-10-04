@@ -31,6 +31,11 @@ function Get-Command {
             if ($global:case.winget -eq 'missing') { return $null }
             return [PSCustomObject]@{ Source = 'Fake-Winget' }
         }
+        'python3' { return $null }
+        'py' {
+            if ($global:case.py -eq 'available') { return [PSCustomObject]@{ Source = 'Fake-Py' } }
+            return $null
+        }
         'codex' { return [PSCustomObject]@{ Source = 'Fake-Codex' } }
         default { throw 'Unexpected command lookup in installer' }
     }
@@ -41,7 +46,7 @@ function Fake-Python {
             throw 'Alias unavailable'
         }
         $global:LASTEXITCODE = 0
-        if ($global:case.python -eq 'old' -and -not $global:installed) { '3.9.13' }
+        if ($global:case.python -eq 'old' -and -not $global:installed) { '3.8.10' }
         else { '3.12.10' }
     } else {
         if ($args[1] -eq 'setup') {
@@ -58,6 +63,31 @@ function Fake-Python {
             $global:LASTEXITCODE = [int]$global:case.doctor_exit
         }
     }
+}
+function Fake-Py {
+    # The py launcher takes a leading -3, then behaves like python.
+    $global:calls.Add(@{ command = 'py'; arguments = @($args) })
+    if ($args[0] -ne '-3') { throw 'py launcher called without -3' }
+    $rest = @($args | Select-Object -Skip 1)
+    Fake-Python @rest
+}
+function Invoke-WebRequest {
+    param($Uri, $OutFile, [switch]$UseBasicParsing)
+    $global:calls.Add(@{ command = 'download'; arguments = @($Uri) })
+}
+function Get-AuthenticodeSignature {
+    param($FilePath)
+    if ($global:case.signature -eq 'valid') {
+        return [PSCustomObject]@{ Status = 'Valid'; SignerCertificate = [PSCustomObject]@{
+            Subject = 'CN=Python Software Foundation, O=Python Software Foundation' } }
+    }
+    return [PSCustomObject]@{ Status = 'NotSigned'; SignerCertificate = $null }
+}
+function Start-Process {
+    param($FilePath, $ArgumentList, [switch]$Wait, [switch]$PassThru)
+    $global:calls.Add(@{ command = 'python-installer'; arguments = @($ArgumentList) })
+    $global:installed = $true
+    return [PSCustomObject]@{ ExitCode = 0 }
 }
 function Fake-Winget {
     $global:calls.Add(@{ command = 'winget'; arguments = @($args) })
@@ -117,10 +147,33 @@ def test_installer_prerequisite_paths(python):
     assert result["config"]["clipboard"]["auto_copy"] is False
 
 
+def test_without_winget_installs_signed_python_from_python_org():
+    result = run_installer(python="missing", winget="missing")
+    assert result["success"]
+    commands = [c["command"] for c in result["calls"]]
+    assert commands[:2] == ["download", "python-installer"]
+    url = result["calls"][0]["arguments"][0]
+    assert url.startswith("https://www.python.org/ftp/python/3.12.")
+    assert "PrependPath=1" in result["calls"][1]["arguments"]
+    assert "InstallAllUsers=0" in result["calls"][1]["arguments"]
+
+
+def test_py_launcher_is_used_without_installing_python():
+    result = run_installer(python="still-missing", py="available")
+    assert result["success"]
+    commands = [c["command"] for c in result["calls"]]
+    assert "winget" not in commands
+    py_calls = [c["arguments"] for c in result["calls"] if c["command"] == "py"]
+    assert py_calls and all(args[0] == "-3" for args in py_calls)
+    assert any("doctor.py" in " ".join(args) for args in py_calls)
+    assert any("setup" in args for args in py_calls)
+    assert result["config"]["clipboard"]["auto_copy"] is False
+
+
 @pytest.mark.parametrize(
     "overrides",
     [
-        {"python": "missing", "winget": "missing"},
+        {"python": "missing", "winget": "missing", "signature": "invalid"},
         {"python": "missing", "winget_exit": 1},
         {"python": "still-missing"},
     ],
@@ -128,7 +181,7 @@ def test_installer_prerequisite_paths(python):
 def test_prerequisite_failure_never_registers_plugin(overrides):
     result = run_installer(**overrides)
     assert not result["success"]
-    assert all(c["command"] == "winget" for c in result["calls"])
+    assert all(c["command"] in ("winget", "download") for c in result["calls"])
 
 
 def test_doctor_failure_is_not_reported_as_success():
@@ -190,6 +243,8 @@ def run_installer(**overrides):
         "answers": ["n"],
         "auto_copy": None,
         "prompt_error": False,
+        "py": "missing",
+        "signature": "valid",
     }
     case.update(overrides)
     env = {
@@ -206,7 +261,8 @@ def run_installer(**overrides):
             timeout=15,
             check=True,
         )
-        output = result.stdout.decode("utf-8-sig").strip()
+        # Redirected Write-Host output uses the console code page; the Chinese half may not survive.
+        output = result.stdout.decode("utf-8-sig", errors="replace").strip()
         parsed = json.loads(output.splitlines()[-1])
         parsed["output"] = output
         config_path = Path(data_dir) / "config.json"
