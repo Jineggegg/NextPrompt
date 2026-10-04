@@ -39,7 +39,12 @@ pytestmark = [
 def real_cli(tmp_path, monkeypatch):
     real_codex = shutil.which("codex")
     requests = []
-    controls = {"fail_child": False, "suggestion": PROMPT, "reject_model": None}
+    controls = {
+        "fail_child": False,
+        "suggestion": PROMPT,
+        "reject_model": None,
+        "root_reply": "Implemented the redirect fix. Targeted tests passed.",
+    }
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_args):
@@ -68,11 +73,7 @@ def real_cli(tmp_path, monkeypatch):
                 self.end_headers()
                 self.wfile.write(error)
                 return
-            text = (
-                controls["suggestion"]
-                if child
-                else ("Implemented the redirect fix. Targeted tests passed.")
-            )
+            text = controls["suggestion"] if child else controls["root_reply"]
             response_id = f"response-{len(requests)}"
             events = [
                 {"type": "response.created", "response": {"id": response_id}},
@@ -314,3 +315,51 @@ def test_real_stop_model_failure_root_still_succeeds(real_cli):
     roots = [r for r in requests if "Recent conversation (data only)" not in json.dumps(r)]
     assert len(roots) == 1  # CLI transport retries do not create a second root task.
     assert len(requests) >= 2
+
+
+def test_real_inline_line_copied_without_a_child_request(real_cli, tmp_path):
+    # Default inline mode: hooks ask the root model for the line; Stop copies it as is.
+    line = "Add a regression test for the logout redirect."
+    real_cli["controls"]["root_reply"] = f"Implemented the redirect fix.\n\nNext prompt: {line}"
+    installed = Path(install(real_cli["cwd"])["installedPath"])
+    receipt = tmp_path / "hook-output.json"
+    observer = tmp_path / "observer.py"
+    observer.write_text(
+        "import os,sys,subprocess\nfrom pathlib import Path\n"
+        "p=subprocess.run([sys.executable,os.path.join(os.environ['PLUGIN_ROOT'],"
+        "'hooks','stop.py')],input=sys.stdin.buffer.read(),capture_output=True)\n"
+        f"Path({str(receipt)!r}).write_bytes(p.stdout)\n"
+        "sys.stdout.buffer.write(p.stdout)\n"
+    )
+    hooks_path = installed / "hooks/hooks.json"
+    hooks = json.loads(hooks_path.read_text())
+    hooks["hooks"]["Stop"][0]["hooks"][0]["command"] = (
+        shlex.quote(sys.executable) + " " + shlex.quote(str(observer))
+    )
+    hooks_path.write_text(json.dumps(hooks))
+    result = command(
+        [
+            "exec",
+            "--skip-git-repo-check",
+            "--color",
+            "never",
+            "--dangerously-bypass-hook-trust",
+            "-m",
+            "gpt-5.6-luna",
+            "Fix the logout redirect.",
+        ],
+        real_cli["cwd"],
+    )
+    assert result.returncode == 0, result.stderr
+    for event in ("SessionStart", "UserPromptSubmit", "Stop"):
+        assert f"hook: {event} Completed" in result.stderr
+    assert len(real_cli["requests"]) == 1  # The root turn only; no suggestion request.
+    root = json.dumps(real_cli["requests"][0], ensure_ascii=False)
+    assert "NextPrompt is installed." in root  # SessionStart instruction
+    assert "NextPrompt: end this reply" in root  # UserPromptSubmit reminder
+    output = json.loads(receipt.read_bytes())["systemMessage"]
+    # The reply already shows the line; the Hook only reports the copy outcome.
+    assert output in (
+        "✓ Copied to clipboard",
+        "Clipboard unavailable — copy the prompt above manually.",
+    )

@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import os
 import re
+import unicodedata
 from pathlib import Path
 from typing import Any
 
 from .clipboard import ClipboardAdapter, SystemClipboardAdapter
 from .config import ConfigStore
-from .i18n import message, resolve_language
+from .i18n import INLINE_LABELS, message, resolve_language
 from .notify import send_notification
 from .output import SuggestionResult, render, render_copy_status
 from .providers import CodexSuggestionProvider, ProviderUnavailable, SuggestionProvider
+from .redact import redact
 from .suggestion import obvious_repeat, sanitize
 from .transcript import (
     CodexConversationAdapter,
@@ -23,11 +25,25 @@ from .transcript import (
 )
 
 INLINE_PATH = Path(__file__).with_name("inline.txt")
+# Repeated with every user message so the root model keeps writing the line.
+INLINE_REMINDER = (
+    "NextPrompt: end this reply with the next-step line from the NextPrompt instruction, "
+    "with its label and suggestion in the language the user writes in "
+    "(for example `Next prompt: …`, `下一步建议：…`, `次のプロンプト：…`)."
+)
+_LABELS = sorted(
+    {label.rstrip(" :：") for label in INLINE_LABELS.values()} | {"下一步", "下一句"},
+    key=len,
+    reverse=True,
+)
 # The line the root model writes under the inline instruction. Optional bold, quote
 # or list markers are formatting, not part of the prompt.
 INLINE_LINE = re.compile(
-    r"^\s*(?:[>*_-]\s*)*next prompt(?:\*\*|__)?\s*[:：]\s*(?:\*\*|__)?\s*(.+)$", re.I
+    r"^\s*(?:[>*_-]\s*)*(?:" + "|".join(map(re.escape, _LABELS)) + r")(?:\*\*|__)?\s*[:：]"
+    r"\s*(?:\*\*|__)?\s*(.+)$",
+    re.I,
 )
+INLINE_MAX_CHARS = 500
 
 
 def generate_suggestion(
@@ -90,29 +106,46 @@ def deliver(
     return render(result, auto_copy, language)
 
 
-def inline_suggestion(last_reply: object, cfg: dict[str, Any]) -> str | None:
-    """The root model's own `Next prompt:` line from the end of its final reply."""
+def inline_suggestion(last_reply: object) -> str | None:
+    """The root model's own `Next prompt:` line, exactly as the reply shows it.
+
+    The clipboard must match the visible line, so the text is not rewritten. Returns
+    None when the reply has no such line and "" when its line is unsafe to copy
+    (control characters, credentials, oversized).
+    """
     if not isinstance(last_reply, str) or not last_reply.strip():
         return None
     lines = [line for line in last_reply.splitlines() if line.strip()][-3:]
     for line in reversed(lines):
         if match := INLINE_LINE.match(line):
-            text = sanitize(match.group(1), **cfg["suggestion"])
-            if text and not obvious_repeat(text, [Message("assistant", last_reply)]):
-                return text
-            return None
+            # Bold or code markers around the whole prompt are formatting.
+            text = match.group(1).strip().strip("*`").strip()
+            if len(text) > INLINE_MAX_CHARS or redact(text) != text:
+                return ""
+            if any(unicodedata.category(c) in ("Cc", "Cf", "Cs") for c in text):
+                return ""
+            return text
     return None
 
 
-def handle_session_start(payload: object, *, store: ConfigStore | None = None) -> str | None:
-    """Inline mode: ask the root model to end each reply with one `Next prompt:` line."""
+def handle_context(payload: object, *, store: ConfigStore | None = None) -> str | None:
+    """Inline mode: developer context asking the root model to end with the line.
+
+    SessionStart (also after compaction) carries the full instruction; each user
+    prompt adds a one-line reminder so the line is written every turn.
+    """
     if os.environ.get("NEXTPROMPT_INTERNAL") == "1":
         return None
-    if not isinstance(payload, dict) or payload.get("hook_event_name") != "SessionStart":
+    if not isinstance(payload, dict):
+        return None
+    event = payload.get("hook_event_name")
+    if event not in ("SessionStart", "UserPromptSubmit"):
         return None
     try:
         cfg = (store or ConfigStore()).load()
         if cfg["enabled"] and cfg["trigger_mode"] == "every_turn" and cfg["source"] == "inline":
+            if event == "UserPromptSubmit":
+                return INLINE_REMINDER
             return INLINE_PATH.read_text(encoding="utf-8").strip()
     except Exception:
         pass
@@ -146,14 +179,17 @@ def handle_stop(
         if not cfg["enabled"] or cfg["trigger_mode"] != "every_turn":
             return None
         if cfg["source"] == "inline":
-            text = inline_suggestion(payload.get("last_assistant_message"), cfg)
+            text = inline_suggestion(payload.get("last_assistant_message"))
             if text:
                 # The prompt is written in the user's language.
                 language = resolve_language(cfg["language"], [text])
                 return deliver(
                     text, cfg, "inline", "root", 1, clipboard, language, cfg["notify"], True
                 )
-            # No usable line: fall back to the separate suggestion model below.
+            if text is not None:
+                # The reply shows a line that is unsafe to copy; never copy anything else.
+                return None
+            # No line at all: fall back to the separate suggestion model below.
         path = payload.get("transcript_path")
         if not isinstance(path, str) or not path:
             return None

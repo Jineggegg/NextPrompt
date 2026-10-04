@@ -22,6 +22,8 @@ from .process import run_process
 from .providers import CodexSuggestionProvider, ProviderUnavailable, choose_model
 from .transcript import Message
 
+HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "Stop")
+
 
 def status(cfg: dict[str, Any]) -> str:
     clipboard = SystemClipboardAdapter(osc52_fallback=cfg["clipboard"]["osc52_fallback"])
@@ -34,7 +36,7 @@ def status(cfg: dict[str, Any]) -> str:
             f"Notification:     {'Yes' if cfg['notify'] else 'No'}",
             "Source:           "
             + (
-                "inline (your Codex model writes it)"
+                "inline (your Codex model ends each reply with it)"
                 if cfg["source"] == "inline"
                 else "model (separate lightweight request)"
             ),
@@ -93,7 +95,7 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     try:
         manifest = json.loads((root / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         hooks = json.loads((root / "hooks" / "hooks.json").read_text(encoding="utf-8"))
-        valid = manifest["name"] == "nextprompt" and set(hooks["hooks"]) == {"SessionStart", "Stop"}
+        valid = manifest["name"] == "nextprompt" and set(hooks["hooks"]) == set(HOOK_EVENTS)
     except (OSError, ValueError, KeyError):
         valid = False
     interpreter = hook_interpreter()
@@ -105,7 +107,7 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     )
     rows += [
         f"Plugin              {'✓' if valid else '✗'} bundle",
-        f"Hook                {'✓' if valid else '✗'} SessionStart + Stop (review trust in /hooks)",
+        f"Hooks               {'✓' if valid else '✗'} {', '.join(HOOK_EVENTS)} (trust in /hooks)",
         "Re-entry protection ✓ hooks/plugins disabled + NEXTPROMPT_INTERNAL",
     ]
     provider = CodexSuggestionProvider(cfg["model"], store.root)

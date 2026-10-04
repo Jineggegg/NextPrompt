@@ -2,7 +2,7 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 NextPrompt is the product, repository, package, plugin and marketplace name.
-Version: **0.1.8**. Runtime: Python 3.9+, standard library only.
+Version: **0.1.9**. Runtime: Python 3.9+, standard library only.
 
 **下一句，已经准备好了。** 每轮完成后，NextPrompt 为你准备一句简短的下一步提示词。
 安装时选择 **Y**，有效建议就会**自动复制到剪贴板**：按 **Ctrl+V**（macOS：**Cmd+V**），
@@ -42,7 +42,10 @@ one short suggestion or nothing when the response is invalid or unhelpful.
 
 ## Features
 
-- Root `Stop` hook only; no `SubagentStop` suggestions.
+- By default the root Codex model ends each reply with a `Next prompt:` (Chinese:
+  `下一步建议：`) line, requested through SessionStart and UserPromptSubmit hooks; the root
+  `Stop` hook copies the text after the colon unchanged. Replies without the line, or
+  `--source model`, use the separate lightweight request below. No `SubagentStop` suggestions.
 - Last 5 visible user/assistant messages, 2500 characters per message, 8000 total.
 - Common credential redaction before clipping or inference.
 - Account model discovery, conservative lightweight runtime fallback, `low` reasoning by default.
@@ -169,7 +172,7 @@ No additional setup is required.
 
 Finish in Codex:
 1. Fully quit and reopen Codex to load the plugin and refreshed PATH.
-2. Open /hooks, review the NextPrompt Stop hook, and approve/trust it.
+2. Open /hooks, review the NextPrompt SessionStart, UserPromptSubmit and Stop hooks, and trust them.
    Installation does not grant hook trust or bypass your approval.
 3. Complete a normal conversation turn. A useful suggestion appears as:
    Next prompt:

@@ -108,7 +108,7 @@ def test_installer_prerequisite_paths(python):
     assert "NextPrompt installed successfully" in output
     assert "No additional setup is required" in output
     assert "Fully quit and reopen Codex" in output
-    assert "Open /hooks" in output and "approve/trust it" in output
+    assert "Open /hooks" in output and "UserPromptSubmit and Stop hooks, and trust them" in output
     assert "Other existing settings are preserved" in output
     assert "Optional: run $nextprompt-setup" in output
     assert "Automatic clipboard copy: OFF" in output
