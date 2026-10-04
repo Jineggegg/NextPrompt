@@ -177,6 +177,21 @@ def test_hook_interpreter_falls_back_to_python3(monkeypatch):
     assert name == "python3" and version.startswith(f"{sys.version_info[0]}.")
 
 
+def test_hook_interpreter_falls_back_to_py_launcher(monkeypatch):
+    monkeypatch.setattr(
+        "nextprompt.cli.shutil.which", lambda name: sys.executable if name == "py" else None
+    )
+    calls = []
+    monkeypatch.setattr(
+        "nextprompt.cli.run_process",
+        lambda args, **k: (
+            calls.append(args) or subprocess.CompletedProcess(args, 0, b"3.12.10\n", b"")
+        ),
+    )
+    assert hook_interpreter() == ("py -3", "3.12.10")
+    assert calls[0][1] == "-3"
+
+
 def test_hook_interpreter_rejects_old_python(monkeypatch):
     monkeypatch.setattr("nextprompt.cli.shutil.which", lambda name: "python-old")
     monkeypatch.setattr(

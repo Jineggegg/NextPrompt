@@ -2,7 +2,7 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 NextPrompt is the product, repository, package, plugin and marketplace name.
-Version: **0.1.11**. Runtime: Python 3.9+, standard library only.
+Version: **0.1.12**. Runtime: Python 3.9+, standard library only.
 
 **下一句，已经准备好了。** 每轮完成后，NextPrompt 为你准备一句简短的下一步提示词。
 安装时选择 **Y**，有效建议就会**自动复制到剪贴板**：按 **Ctrl+V**（macOS：**Cmd+V**），
@@ -81,11 +81,14 @@ V1 does not patch Codex or install fake buttons.
 
 ## Installation
 
-The hook runs `python` on PATH and falls back to `python3` when `python` is missing
-or older than Python 3.9, so stock macOS (Python 3.9) and Linux need no extra setup. The runtime and
-Hook never install software. On Windows, the explicitly invoked PowerShell installer
-checks the requirement and, only when Python is missing or too old, uses `winget` to
-install Python 3.12 for the current user. It does not request administrator access.
+The hook runs `python` on PATH and falls back to `python3`, then to the Windows `py -3`
+launcher, when the previous one is missing or older than Python 3.9, so stock macOS
+(Python 3.9), Linux and py-launcher-only Windows installs need no extra setup. The runtime
+and Hook never install software. Only the explicitly invoked installers do, and only when
+Python 3.9+ is missing: on Windows, `winget` installs Python 3.12 for the current user
+(without `winget`, the official python.org installer is downloaded and run only if its
+Authenticode signature is valid and from the Python Software Foundation); on macOS,
+Homebrew or Apple's Command Line Tools; on Linux, the system package manager (with sudo).
 
 Clone **Jineggegg/NextPrompt** with Git. The plugin bundles all six skills; no
 package publication or pip installation is needed. Commands in this guide use
@@ -108,8 +111,8 @@ For unattended installation, pass `-AutoCopy on` or `-AutoCopy off` explicitly.
 Add `-Probe` to perform a synthetic inference
 test; it may consume model quota. The execution-policy override applies only to this
 PowerShell process and does not change the user's system policy. If `winget` is
-unavailable, the script stops with instructions instead of downloading an unverified
-installer or requesting elevation.
+unavailable, it downloads the official python.org installer and runs it per user only
+after verifying its Python Software Foundation signature; it never requests elevation.
 
 macOS / Linux install:
 
@@ -512,7 +515,7 @@ quota failures are summarized as safe categories, without the original CLI error
 
 - No output: check enabled/trigger settings, hook trust and transcript support; setup is optional.
 - `hook: Stop Failed`: run Doctor and check the `Hook Python` row; the hook needs
-  `python` or `python3` 3.9+ on PATH (the macOS-bundled `python3` qualifies).
+  `python`, `python3` or (Windows) `py -3` with 3.9+ on PATH (the macOS-bundled `python3` qualifies).
 - Model unavailable: run `codex login status` and the inference probe; reauthenticate
   using Codex's own login flow if required. No automatic login is attempted.
 - No clipboard backend: use display only, or install your preferred clipboard tool

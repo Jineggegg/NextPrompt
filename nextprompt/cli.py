@@ -53,19 +53,19 @@ def status(cfg: dict[str, Any]) -> str:
 
 
 def hook_interpreter() -> tuple[str, str] | None:
-    """The interpreter the Stop hook command will use: `python`, else `python3`."""
-    for name in ("python", "python3"):
+    """The interpreter the hook command will use: `python`, `python3`, else `py -3`."""
+    for name, *flags in (("python",), ("python3",), ("py", "-3")):
         executable = shutil.which(name)
         if not executable:
             continue
         try:
             result = run_process(
-                [executable, "-c", "import sys;print('%d.%d.%d' % sys.version_info[:3])"],
+                [executable, *flags, "-c", "import sys;print('%d.%d.%d' % sys.version_info[:3])"],
                 timeout=5,
             )
             version = result.stdout.decode("ascii").strip()
             if result.returncode == 0 and tuple(map(int, version.split(".")[:2])) >= (3, 9):
-                return name, version
+                return " ".join((name, *flags)), version
         except (OSError, ValueError, subprocess.TimeoutExpired):
             continue
     return None
@@ -103,7 +103,7 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     rows.append(
         f"Hook Python         ✓ {interpreter[0]} {interpreter[1]}"
         if interpreter
-        else "Hook Python         ✗ no python/python3 3.9+ on PATH (hook would fail)"
+        else "Hook Python         ✗ no python, python3 or py -3 with 3.9+ on PATH (hook would fail)"
     )
     rows += [
         f"Plugin              {'✓' if valid else '✗'} bundle",

@@ -13,7 +13,7 @@ directory). Call its CLI:
 
 `python "<plugin root>/scripts/nextprompt.py" suggest --context-stdin`
 
-Use `python3` instead of `python` if `python` is unavailable.
+Use `python3` instead of `python` if `python` is unavailable, or `py -3` on Windows if neither works.
 
 Pass JSON on stdin with this shape:
 

@@ -21,7 +21,7 @@ NextPrompt makes every Codex reply end with a next-step line whose label and sug
 - **Auto-copy + notification by default**: each suggestion is copied and announced with a desktop notification, so you know when to paste; Windows, WSL, macOS and common Linux desktops. Display-only mode is available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
-版本 / Version **0.1.11** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
+版本 / Version **0.1.12** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
 
 ## 安装 / Installation
 
@@ -33,10 +33,10 @@ Set-Location NextPrompt
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-需提前安装 Git，并安装、登录 Codex CLI；Python 缺失或版本过旧时，Windows 安装脚本通过 `winget` 自动安装。
+需提前安装 Git，并安装、登录 Codex CLI；Python 缺失或低于 3.9 时，Windows 安装脚本会自动安装（优先用 `winget`，没有 `winget` 就从 python.org 下载经过签名校验的官方安装包）。
 安装时询问是否自动复制到剪贴板：**Y 或直接回车开启（默认），N 仅展示**。安装结束报告会说明使用步骤、复制设置和默认开启的桌面通知；通知可通过 `$nextprompt-setup` 关闭，不必关闭任何 Hook。
 
-Install Git, then install and sign in to Codex CLI first. On Windows, the installer uses `winget` to install Python if it is missing or too old.
+Install Git, then install and sign in to Codex CLI first. On Windows, the installer installs Python if it is missing or older than 3.9 (through `winget`, or the signature-checked official python.org installer when `winget` is unavailable).
 When asked about clipboard copy, **Y or Enter enables auto-copy (default); N keeps display-only mode**. The final installation report explains how to use NextPrompt, confirms clipboard behavior, and notes that desktop notifications are on by default and can be turned off with `$nextprompt-setup` without disabling a Hook.
 
 安装结束后 / After installation:
@@ -51,9 +51,9 @@ When asked about clipboard copy, **Y or Enter enables auto-copy (default); N kee
 No separate setup is required. Use `$nextprompt-setup` to change preferences.
 For unattended installation, explicitly pass `-AutoCopy on` or `-AutoCopy off`.
 
-macOS / Linux（需已有 Python 3.9+ 的 `python` 或 `python3` 命令，macOS 自带的即可，以及 Codex）：
+macOS / Linux（需已安装 Codex；没有 Python 3.9+ 时脚本会自动安装：macOS 用 Homebrew 或苹果命令行工具，Linux 用系统包管理器）：
 
-macOS / Linux (Python 3.9+ as `python` or `python3`, including the one bundled with macOS, plus Codex):
+macOS / Linux (Codex required; if Python 3.9+ is missing, the script installs it through Homebrew or Apple's Command Line Tools on macOS, or the system package manager on Linux):
 
 ```sh
 git clone https://github.com/Jineggegg/NextPrompt.git

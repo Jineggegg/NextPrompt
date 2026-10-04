@@ -1,11 +1,23 @@
 # Changelog
 
-## Unreleased
+## 0.1.12 — 2026-10-04
 
 - Add `scripts/install.sh` for macOS / Linux. Like the Windows installer it registers
   the plugin, runs the doctor, asks about clipboard copy (or takes `--auto-copy on|off`)
   and ends with a bilingual usage report, so instructions show right after installation
   instead of only at the first trusted Codex session.
+- Python: every entry point accepts Python 3.9+ through `python`, `python3` or the Windows
+  `py -3` launcher. The hook command and Doctor gained the `py -3` fallback, and the Windows
+  installer now accepts 3.9 (it required 3.10) and finds a py-launcher-only Python.
+- When Python 3.9+ is missing, the installers install it: Windows through `winget`, or the
+  official python.org installer after checking its Python Software Foundation signature
+  when `winget` is unavailable; macOS through Homebrew or Apple's Command Line Tools;
+  Linux through the system package manager.
+- Both installers end with a bilingual (中文 / English) report: restart Codex, trust the
+  Hooks, how suggestions look, how to turn off notifications and how to pause suggestions.
+- CI runs Python 3.9 to 3.14 on the self-hosted Linux runner.
+- Re-trust the hooks in `/hooks` after updating: the hook commands changed (new `py -3`
+  fallback).
 
 ## 0.1.11 — 2026-10-04
 

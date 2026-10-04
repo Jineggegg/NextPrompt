@@ -14,11 +14,11 @@ Set-Location NextPrompt
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-脚本仅在用户主动运行时检查 Python。缺少 Python 3.10+ 时，它通过官方
+脚本仅在用户主动运行时检查 Python（`python`、`python3`、`py -3` 都认）。缺少 Python 3.9+ 时，它通过官方
 `winget` 源为当前用户静默安装 Python 3.12，刷新当前 PowerShell 的 PATH，
 随后注册 marketplace、安装插件并运行 Doctor。它不申请管理员权限，Hook
-和日常运行也不会下载软件。缺少 `winget` 时脚本会停止，不会改用未经验证的
-下载地址。`-ExecutionPolicy Bypass` 仅对此次 PowerShell 进程生效，不会修改
+和日常运行也不会下载软件。缺少 `winget` 时，脚本从 python.org 下载官方安装包，
+确认是 Python Software Foundation 签名后才运行，签名不对就删除并停止。`-ExecutionPolicy Bypass` 仅对此次 PowerShell 进程生效，不会修改
 系统策略。可选 `-Probe` 会发送固定模拟对话并可能消耗模型额度。
 
 ## 2. 手动安装并验证真实模型

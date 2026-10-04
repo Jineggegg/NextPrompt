@@ -29,11 +29,28 @@ exec "$NEXTPROMPT_TEST_PYTHON" "$@"
 """
 
 
-def run_installer(*args, codex_exit=0, doctor_exit=0):
+# Shadows any real interpreter: too old for NextPrompt.
+OLD_PYTHON = """#!/bin/sh
+exit 1
+"""
+
+# A package manager that "installs" Python by putting the working shim in place.
+FAKE_INSTALLER = """#!/bin/sh
+echo "$(basename "$0") $*" >> "$NEXTPROMPT_TEST_LOG"
+case "$*" in *update*) exit 0 ;; esac
+cp "$FAKE_PYTHON_SOURCE" "$(dirname "$0")/python3"
+"""
+
+
+def run_installer(*args, codex_exit=0, doctor_exit=0, extra=None):
     with tempfile.TemporaryDirectory(prefix="nextprompt-install-test-") as tmp:
         bin_dir = Path(tmp) / "bin"
         bin_dir.mkdir()
-        for name, body in (("codex", FAKE_CODEX), ("python3", FAKE_PYTHON)):
+        source = Path(tmp) / "python-shim"
+        source.write_text(FAKE_PYTHON)
+        source.chmod(0o755)
+        files = {"codex": FAKE_CODEX, "python3": FAKE_PYTHON, **(extra or {})}
+        for name, body in files.items():
             path = bin_dir / name
             path.write_text(body)
             path.chmod(0o755)
@@ -48,6 +65,7 @@ def run_installer(*args, codex_exit=0, doctor_exit=0):
             "NEXTPROMPT_TEST_PYTHON": sys.executable,
             "FAKE_CODEX_EXIT": str(codex_exit),
             "FAKE_DOCTOR_EXIT": str(doctor_exit),
+            "FAKE_PYTHON_SOURCE": str(source),
         }
         result = subprocess.run(
             [SH, str(ROOT / "scripts/install.sh"), *args],
@@ -112,3 +130,37 @@ def test_invalid_option_is_rejected_before_installing():
     result = run_installer("--auto-copy", "maybe")
     assert result["code"] != 0
     assert result["calls"] == []
+
+
+def test_macos_without_python_installs_it_with_homebrew():
+    result = run_installer(
+        "--auto-copy",
+        "on",
+        extra={
+            "python3": OLD_PYTHON,
+            "python": OLD_PYTHON,
+            "uname": "#!/bin/sh\necho Darwin\n",
+            "brew": FAKE_INSTALLER,
+        },
+    )
+    assert result["code"] == 0, result["output"]
+    assert "brew install python3" in result["log"]
+    assert result["calls"][:3] == ["brew", "codex", "codex"]
+    assert "NextPrompt installed successfully" in result["output"]
+
+
+def test_linux_without_python_installs_it_with_the_package_manager():
+    result = run_installer(
+        "--auto-copy",
+        "off",
+        extra={
+            "python3": OLD_PYTHON,
+            "python": OLD_PYTHON,
+            "uname": "#!/bin/sh\necho Linux\n",
+            "id": "#!/bin/sh\necho 0\n",
+            "apt-get": FAKE_INSTALLER,
+        },
+    )
+    assert result["code"] == 0, result["output"]
+    assert "apt-get install -y python3" in result["log"]
+    assert result["config"]["clipboard"]["auto_copy"] is False
