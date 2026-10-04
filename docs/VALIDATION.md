@@ -1,5 +1,14 @@
 # Validation
 
+## v0.1.7 — 2026-10-04, macOS-bundled Python 3.9
+
+- User report on 0.1.6: first turn showed `hook: Stop Failed` and no suggestion.
+- Reproduced with real Codex 0.160.0 on a host with no `python` and `python3` = 3.9:
+  0.1.6 reported `hook: Stop Failed` and made no suggestion request (2/2 runs).
+  0.1.7 completed the Hook and requested one suggestion (4/4 runs).
+- Full suite on Python 3.9, which 0.1.6 never tested: only the version guard failed;
+  all other engine tests passed, so the minimum was lowered to 3.9.
+
 ## v0.1.6 — 2026-10-04, pre-release review and full regression
 
 - Linux, Python 3.10 / 3.11 / 3.12 / 3.13 with real Codex CLI **0.160.0** and

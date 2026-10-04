@@ -8,7 +8,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from nextprompt.cli import main
+from nextprompt.cli import hook_interpreter, main
 from nextprompt.config import ConfigStore
 from nextprompt.providers import ProviderUnavailable
 
@@ -106,6 +106,7 @@ def doctor_provider(monkeypatch):
         "nextprompt.cli.SystemClipboardAdapter",
         lambda **k: Mock(available=lambda: False, backend_name=lambda: "unavailable"),
     )
+    monkeypatch.setattr("nextprompt.cli.hook_interpreter", lambda: ("python3", "3.9.6"))
     return provider
 
 
@@ -160,3 +161,26 @@ def test_language_setting(tmp_path, capsys):
     assert store.load()["language"] == "zh-TW"
     assert store.load()["clipboard"]["auto_copy"] is False  # Not a clipboard choice.
     assert "Language:         zh-TW" in capsys.readouterr().out
+
+
+def test_doctor_fails_when_hook_has_no_python(tmp_path, capsys, doctor_provider, monkeypatch):
+    monkeypatch.setattr("nextprompt.cli.hook_interpreter", lambda: None)
+    assert main(["--data-dir", str(tmp_path), "doctor"]) == 1
+    assert "Hook Python         ✗" in capsys.readouterr().out
+
+
+def test_hook_interpreter_falls_back_to_python3(monkeypatch):
+    monkeypatch.setattr(
+        "nextprompt.cli.shutil.which", lambda name: None if name == "python" else sys.executable
+    )
+    name, version = hook_interpreter()
+    assert name == "python3" and version.startswith(f"{sys.version_info[0]}.")
+
+
+def test_hook_interpreter_rejects_old_python(monkeypatch):
+    monkeypatch.setattr("nextprompt.cli.shutil.which", lambda name: "python-old")
+    monkeypatch.setattr(
+        "nextprompt.cli.run_process",
+        lambda *a, **k: subprocess.CompletedProcess(a, 0, b"3.8.18\n", b""),
+    )
+    assert hook_interpreter() is None

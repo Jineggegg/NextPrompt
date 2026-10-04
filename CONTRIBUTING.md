@@ -1,6 +1,6 @@
 # Contributing
 
-Use Python 3.10+ and a feature branch. Runtime dependencies must remain standard
+Use Python 3.9+ and a feature branch. Runtime dependencies must remain standard
 library only unless a concrete portability or security need justifies an addition.
 
 ```sh

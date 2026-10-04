@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -42,6 +43,25 @@ def status(cfg: dict[str, Any]) -> str:
     )
 
 
+def hook_interpreter() -> tuple[str, str] | None:
+    """The interpreter the Stop hook command will use: `python`, else `python3`."""
+    for name in ("python", "python3"):
+        executable = shutil.which(name)
+        if not executable:
+            continue
+        try:
+            result = run_process(
+                [executable, "-c", "import sys;print('%d.%d.%d' % sys.version_info[:3])"],
+                timeout=5,
+            )
+            version = result.stdout.decode("ascii").strip()
+            if result.returncode == 0 and tuple(map(int, version.split(".")[:2])) >= (3, 9):
+                return name, version
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            continue
+    return None
+
+
 @dataclass(frozen=True)
 class DoctorReport:
     text: str
@@ -69,7 +89,13 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
         valid = manifest["name"] == "nextprompt" and set(hooks["hooks"]) == {"Stop"}
     except (OSError, ValueError, KeyError):
         valid = False
-    healthy = valid and config_ok
+    interpreter = hook_interpreter()
+    healthy = valid and config_ok and interpreter is not None
+    rows.append(
+        f"Hook Python         ✓ {interpreter[0]} {interpreter[1]}"
+        if interpreter
+        else "Hook Python         ✗ no python/python3 3.9+ on PATH (hook would fail)"
+    )
     rows += [
         f"Plugin              {'✓' if valid else '✗'} bundle",
         f"Hook                {'✓' if valid else '✗'} Stop (review trust in /hooks)",

@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nextprompt"
-version = "0.1.6"
+version = "0.1.7"
 description = "NextPrompt for Codex: lightweight next-step suggestions"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 license = {text = "MIT"}
 dependencies = []
 
@@ -28,7 +28,7 @@ markers = ["integration: real Codex CLI with a local simulated model service"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py39"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]

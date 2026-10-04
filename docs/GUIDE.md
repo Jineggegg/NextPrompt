@@ -2,7 +2,7 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 NextPrompt is the product, repository, package, plugin and marketplace name.
-Version: **0.1.6**. Runtime: Python 3.10+, standard library only.
+Version: **0.1.7**. Runtime: Python 3.9+, standard library only.
 
 **下一句，已经准备好了。** 每轮完成后，NextPrompt 为你准备一句简短的下一步提示词。
 安装时选择 **Y**，有效建议就会**自动复制到剪贴板**：按 **Ctrl+V**（macOS：**Cmd+V**），
@@ -79,7 +79,7 @@ V1 does not patch Codex or install fake buttons.
 ## Installation
 
 The hook runs `python` on PATH and falls back to `python3` when `python` is missing
-or older than Python 3.10, so stock macOS and Linux need no extra alias. The runtime and
+or older than Python 3.9, so stock macOS (Python 3.9) and Linux need no extra setup. The runtime and
 Hook never install software. On Windows, the explicitly invoked PowerShell installer
 checks the requirement and, only when Python is missing or too old, uses `winget` to
 install Python 3.12 for the current user. It does not request administrator access.
@@ -487,6 +487,8 @@ check failed. Only `--probe` validates an actual model response. Authentication 
 quota failures are summarized as safe categories, without the original CLI error.
 
 - No output: check enabled/trigger settings, hook trust and transcript support; setup is optional.
+- `hook: Stop Failed`: run Doctor and check the `Hook Python` row; the hook needs
+  `python` or `python3` 3.9+ on PATH (the macOS-bundled `python3` qualifies).
 - Model unavailable: run `codex login status` and the inference probe; reauthenticate
   using Codex's own login flow if required. No automatic login is attempted.
 - No clipboard backend: use display only, or install your preferred clipboard tool
@@ -494,7 +496,7 @@ quota failures are summarized as safe categories, without the original CLI error
 - Plugin edits not reflected: remove/add the installed plugin to refresh its cached
   bundle, then review changed hook trust again.
 - `python` missing on Windows: rerun `scripts/install.ps1`; on other platforms,
-  install Python 3.10+ so that `python3` or `python` is on PATH.
+  install Python 3.9+ so that `python3` or `python` is on PATH.
 - Malformed config: repair/delete only NextPrompt's own config, then run setup.
 
 ## Disable, uninstall and delete local config

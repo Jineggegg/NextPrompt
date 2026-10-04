@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.7 — 2026-10-04
+
+- Support Python 3.9 so the `python3` bundled with macOS (3.9.6) runs the Stop Hook.
+  0.1.6 rejected it and every turn showed `hook: Stop Failed` without a suggestion.
+- Doctor reports which interpreter the Hook will use (`python`, else `python3`) and
+  fails when neither is Python 3.9+.
+- CI also tests Python 3.9.
+
 ## 0.1.6 — 2026-10-04
 
 - Fall back from `python` to `python3` in the Stop Hook so stock macOS and Linux

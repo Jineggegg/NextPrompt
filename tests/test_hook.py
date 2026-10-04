@@ -255,7 +255,7 @@ def test_long_final_answer_still_suggests(tmp_path):
 
 def test_unsupported_python_exits_one_for_fallback(tmp_path):
     # Exit 1 lets `python ... || python3 ...` try the next interpreter; never exit 2.
-    result = run_entrypoint(tmp_path, b"{}", prelude="sys.version_info = (3, 9, 18); ")
+    result = run_entrypoint(tmp_path, b"{}", prelude="sys.version_info = (3, 8, 18); ")
     assert result.returncode == 1 and result.stdout == b""
 
 
