@@ -21,7 +21,7 @@ NextPrompt makes every Codex reply end with a next-step line whose label and sug
 - **Auto-copy + notification by default**: each suggestion is copied and announced with a desktop notification, so you know when to paste; Windows, WSL, macOS and common Linux desktops. Display-only mode is available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
-版本 / Version **0.1.10** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
+版本 / Version **0.1.11** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
 
 ## 安装 / Installation
 
