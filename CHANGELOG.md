@@ -2,8 +2,10 @@
 
 ## 0.1.9 — 2026-10-04
 
-- Every Codex reply now ends with a next-step line by default (`Next prompt: …`, or
-  `下一步建议：…` in Chinese conversations), and the text after the colon is copied to
+- Every Codex reply now ends with a next-step line by default. Its label and suggestion
+  follow the language the user writes in (`Next prompt: …`, `下一步建议：…`,
+  `次のプロンプト：…`, `다음 프롬프트: …` and the other supported languages; English label
+  for any other language), and the text after the colon is copied to
   the clipboard exactly as shown, with no separate model request. A SessionStart Hook
   (also after compaction) gives the instruction and a new UserPromptSubmit Hook repeats a
   one-line reminder each turn. Lines that look like they contain a secret, contain

@@ -37,7 +37,8 @@ Optional user-requested settings: `--enabled on|off`, `--model MODEL`,
 `--osc52 on|off`, `--notify on|off` (desktop notification), `--trigger-mode every_turn|manual`,
 `--language auto|en|zh|zh-TW|ja|ko|es|fr|de|pt|ru` (labels; `auto` follows the
 user's latest message), `--source inline|model` (`inline`, the default: the Codex model ends each
-reply with a `Next prompt:` / `下一步建议：` line whose text is copied as is; `model`:
+reply with a next-step line in the user's language (`Next prompt:`, `下一步建议：`, …)
+whose text is copied as is; `model`:
 no line in replies, a separate lightweight request instead; takes effect in new or
 resumed sessions). OSC 52 defaults off and is
 unverified best effort; clipboard contents can be read by other local applications.

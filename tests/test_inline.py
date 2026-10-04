@@ -15,6 +15,7 @@ from nextprompt.hook import (
     handle_stop,
     inline_suggestion,
 )
+from nextprompt.i18n import INLINE_LABELS
 from nextprompt.transcript import Message
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -174,3 +175,36 @@ def test_shipped_hooks_cover_all_three_events():
     assert list(hooks) == ["SessionStart", "UserPromptSubmit", "Stop"]
     for event in ("SessionStart", "UserPromptSubmit"):
         assert "context.py" in hooks[event][0]["hooks"][0]["command"]
+
+
+@pytest.mark.parametrize("language, label", sorted(INLINE_LABELS.items()))
+def test_every_language_label_is_taught_and_parsed(language, label):
+    assert label in INLINE_PATH.read_text(encoding="utf-8")
+    sep = "" if label.endswith("：") else " "
+    assert inline_suggestion(reply(f"{label}{sep}Texto 提示 テスト")) == "Texto 提示 テスト"
+
+
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        ("次のプロンプト：ログアウトの回帰テストを追加して", "ログアウトの回帰テストを追加して"),
+        ("다음 프롬프트: 로그아웃 회귀 테스트를 추가해 줘", "로그아웃 회귀 테스트를 추가해 줘"),
+        (
+            "Prochain prompt : Ajoute un test pour la déconnexion",
+            "Ajoute un test pour la déconnexion",
+        ),
+        ("**Nächster Prompt:** Füge einen Logout-Test hinzu", "Füge einen Logout-Test hinzu"),
+        ("下一步建議：替登出流程加上回歸測試", "替登出流程加上回歸測試"),
+    ],
+)
+def test_localized_lines_copy_the_visible_text(line, expected):
+    assert inline_suggestion(reply(line)) == expected
+
+
+def test_localized_line_reports_in_that_language(configured, clipboard):
+    configured.update(lambda cfg: cfg["clipboard"].update(auto_copy=True))
+    last = reply("次のプロンプト：ログアウトの回帰テストを追加して")
+    payload = {**PAYLOAD, "last_assistant_message": last}
+    text = handle_stop(payload, store=configured, provider=Mock(), clipboard=clipboard)
+    clipboard.copy.assert_called_once_with("ログアウトの回帰テストを追加して")
+    assert text == "✓ クリップボードにコピーしました"

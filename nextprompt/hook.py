@@ -10,7 +10,7 @@ from typing import Any
 
 from .clipboard import ClipboardAdapter, SystemClipboardAdapter
 from .config import ConfigStore
-from .i18n import message, resolve_language
+from .i18n import INLINE_LABELS, message, resolve_language
 from .notify import send_notification
 from .output import SuggestionResult, render, render_copy_status
 from .providers import CodexSuggestionProvider, ProviderUnavailable, SuggestionProvider
@@ -27,13 +27,19 @@ from .transcript import (
 INLINE_PATH = Path(__file__).with_name("inline.txt")
 # Repeated with every user message so the root model keeps writing the line.
 INLINE_REMINDER = (
-    "NextPrompt: end this reply with its final line `Next prompt: <suggestion>` "
-    "(`下一步建议：<建议>` when the user writes Chinese)."
+    "NextPrompt: end this reply with the next-step line from the NextPrompt instruction, "
+    "with its label and suggestion in the language the user writes in "
+    "(for example `Next prompt: …`, `下一步建议：…`, `次のプロンプト：…`)."
+)
+_LABELS = sorted(
+    {label.rstrip(" :：") for label in INLINE_LABELS.values()} | {"下一步", "下一句"},
+    key=len,
+    reverse=True,
 )
 # The line the root model writes under the inline instruction. Optional bold, quote
 # or list markers are formatting, not part of the prompt.
 INLINE_LINE = re.compile(
-    r"^\s*(?:[>*_-]\s*)*(?:next prompt|下一步建议|下一步|下一句)(?:\*\*|__)?\s*[:：]"
+    r"^\s*(?:[>*_-]\s*)*(?:" + "|".join(map(re.escape, _LABELS)) + r")(?:\*\*|__)?\s*[:：]"
     r"\s*(?:\*\*|__)?\s*(.+)$",
     re.I,
 )

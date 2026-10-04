@@ -2,7 +2,7 @@
 
 下一句，已经准备好了。 · Your next prompt, ready to paste.
 
-NextPrompt 让 Codex 每次回答的最后一行都写上下一步建议（中文为 `下一步建议：…`，英文为 `Next prompt: …`），
+NextPrompt 让 Codex 每次回答的最后一行都写上下一步建议，标签和建议都用你平时输入的语言（如 `下一步建议：…`、`Next prompt: …`、`次のプロンプト：…`），
 并把冒号后面的内容**原样复制到剪贴板**，按 **Ctrl+V**（macOS：**Cmd+V**）即可继续。
 
 - **回答结束即就绪**：建议由 Codex 当前模型顺手写出，不再另外请求模型，也能看到完整对话。
@@ -12,7 +12,7 @@ NextPrompt 让 Codex 每次回答的最后一行都写上下一步建议（中�
 - **自动复制 + 通知**：默认开启，建议一准备好就复制到剪贴板并弹出系统通知，看到通知即可粘贴；支持 Windows、WSL、macOS 和常见 Linux 桌面，也可以改为仅展示。
 - **由你决定发送**：不会自动提交或执行建议。
 
-NextPrompt makes every Codex reply end with a next-step line (`Next prompt: …`, or `下一步建议：…` in Chinese) and **copies the text after the colon to your clipboard exactly as shown**, so you can paste with **Ctrl+V** (**Cmd+V** on macOS).
+NextPrompt makes every Codex reply end with a next-step line whose label and suggestion follow the language you write in (`Next prompt: …`, `下一步建议：…`, `次のプロンプト：…` and so on) and **copies the text after the colon to your clipboard exactly as shown**, so you can paste with **Ctrl+V** (**Cmd+V** on macOS).
 
 - **Ready when the reply ends**: your Codex model writes the suggestion itself, with the whole conversation in view and no extra model request.
 - **Clipboard matches the reply**: the copied text is the line's text, unchanged; lines that look like they contain a secret are not copied.

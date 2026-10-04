@@ -134,6 +134,22 @@ def detect_language(text: str) -> str:
     return "en"
 
 
+# Label of the next-step line the root model writes at the end of each reply, in the
+# user's language. Other languages use the English label with a localized prompt.
+INLINE_LABELS: dict[str, str] = {
+    "en": "Next prompt:",
+    "zh": "下一步建议：",
+    "zh-TW": "下一步建議：",
+    "ja": "次のプロンプト：",
+    "ko": "다음 프롬프트:",
+    "es": "Siguiente prompt:",
+    "fr": "Prochain prompt :",
+    "de": "Nächster Prompt:",
+    "pt": "Próximo prompt:",
+    "ru": "Следующий запрос:",
+}
+
+
 def resolve_language(setting: str, texts: Iterable[str]) -> str:
     """Use the configured language, else the first non-empty text (latest user message)."""
     if setting in MESSAGES:
