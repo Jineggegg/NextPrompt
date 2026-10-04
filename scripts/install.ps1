@@ -146,11 +146,11 @@ Write-Host ""
 Write-Host "NextPrompt installed successfully."
 if ($AutoCopy -eq "on") {
     Write-Host "Automatic clipboard copy: ON. New suggestions will be copied automatically."
-    Write-Host "A desktop notification shows each suggestion when it is ready to paste."
 }
 else {
     Write-Host "Automatic clipboard copy: OFF. Suggestions will be displayed only."
 }
+Write-Host "Desktop notifications: ON by default; you can turn them off without disabling suggestions."
 Write-Host "Your clipboard choice has been saved. Other existing settings are preserved."
 Write-Host "No additional setup is required."
 Write-Host ""
@@ -163,6 +163,6 @@ Write-Host "   Next prompt:"
 Write-Host "   Run the full regression suite and review the final diff."
 Write-Host "   (Example only; suggestions depend on the conversation.)"
 Write-Host ""
-Write-Host "Optional: run `$nextprompt-setup to change clipboard copy or other settings."
+Write-Host "Optional: run `$nextprompt-setup to change clipboard copy or turn off notifications."
 Write-Host "Help: run `$nextprompt-status or `$nextprompt-doctor."
 Write-Host "If /hooks is unavailable, use a supported Codex client/CLI; automatic suggestions are not verified until the hook loads and is trusted."

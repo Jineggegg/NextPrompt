@@ -11,6 +11,7 @@ from nextprompt.config import ConfigError, ConfigStore
 from nextprompt.hook import (
     INLINE_PATH,
     INLINE_REMINDER,
+    WELCOME_MARKER,
     handle_context,
     handle_stop,
     inline_suggestion,
@@ -154,11 +155,22 @@ def run_context(tmp_path, payload):
     )
 
 
-def test_context_entrypoint_prints_plain_text_by_default(tmp_path):
+def test_context_entrypoint_shows_onboarding_once_and_keeps_inline_context(tmp_path):
     start = run_context(tmp_path, START)
     assert start.returncode == 0
-    # Plain text (not JSON) so Codex records it as developer context.
-    assert start.stdout.decode("utf-8").startswith("NextPrompt is installed.")
+    first = json.loads(start.stdout)
+    assert "NextPrompt 安装完成" in first["systemMessage"]
+    assert "自动复制到剪贴板 / auto-copy 开 / on" in first["systemMessage"]
+    assert "桌面通知 / desktop notification 开 / on" in first["systemMessage"]
+    assert "$nextprompt-setup" in first["systemMessage"]
+    assert first["hookSpecificOutput"] == {
+        "hookEventName": "SessionStart",
+        "additionalContext": INLINE_PATH.read_text(encoding="utf-8").strip(),
+    }
+    assert (tmp_path / WELCOME_MARKER).exists()
+    # Later SessionStart runs continue to inject context without repeating the report.
+    resumed = run_context(tmp_path, {**START, "source": "resume"})
+    assert resumed.stdout.decode("utf-8").startswith("NextPrompt is installed.")
     prompt = run_context(tmp_path, PROMPT)
     assert prompt.returncode == 0
     assert prompt.stdout.decode("utf-8").strip() == INLINE_REMINDER
@@ -167,7 +179,26 @@ def test_context_entrypoint_prints_plain_text_by_default(tmp_path):
 def test_context_entrypoint_silent_in_model_mode(tmp_path):
     ConfigStore(tmp_path).update(lambda cfg: cfg.update(source="model"))
     result = run_context(tmp_path, START)
+    assert "NextPrompt 安装完成" in json.loads(result.stdout)["systemMessage"]
+    assert "hookSpecificOutput" not in json.loads(result.stdout)
+    result = run_context(tmp_path, {**START, "source": "resume"})
     assert result.returncode == 0 and result.stdout == b""
+
+
+def test_onboarding_reports_saved_preferences(tmp_path):
+    ConfigStore(tmp_path).update(
+        lambda cfg: (cfg["clipboard"].update(auto_copy=False), cfg.update(notify=False))
+    )
+    report = json.loads(run_context(tmp_path, START).stdout)["systemMessage"]
+    assert "自动复制到剪贴板 / auto-copy 关 / off" in report
+    assert "桌面通知 / desktop notification 关 / off" in report
+    assert "默认均开启 / both on by default" in report
+
+
+def test_disabled_plugin_does_not_show_onboarding(tmp_path):
+    ConfigStore(tmp_path).update(lambda cfg: cfg.update(enabled=False))
+    assert run_context(tmp_path, START).stdout == b""
+    assert not (tmp_path / WELCOME_MARKER).exists()
 
 
 def test_shipped_hooks_cover_all_three_events():

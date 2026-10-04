@@ -1,5 +1,17 @@
 # Validation
 
+## v0.1.10 — 2026-10-04, one-time installation report
+
+- Windows Python 3.12: Ruff check and format check passed; the full local suite
+  passed (384 passed, 8 skipped). The skipped cases require POSIX/opt-in real
+  Codex CLI integration.
+- Entrypoint tests verify that the first trusted SessionStart emits one JSON
+  `systemMessage` with the saved copy/notification settings and an independent
+  `additionalContext` instruction; later starts do not repeat the report.
+  The Windows installer tests verify its updated completion guidance.
+- This run did not verify how the Codex desktop UI renders the message after a
+  fresh GitHub reinstall and Hook trust; that remains manual acceptance.
+
 ## v0.1.9 — 2026-10-04, next-step line in every reply by default
 
 - Codex source (openai/codex at the time of writing): plugin hooks load like any other
