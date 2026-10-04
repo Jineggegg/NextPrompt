@@ -2,7 +2,9 @@
 param(
     [switch]$Probe,
     [ValidateSet("on", "off")]
-    [string]$AutoCopy
+    [string]$AutoCopy,
+    [ValidateSet("on", "off")]
+    [string]$Notify
 )
 
 Set-StrictMode -Version Latest
@@ -165,30 +167,70 @@ if ($LASTEXITCODE -ne 0) {
     throw "NextPrompt Doctor reported a required check failure."
 }
 
-if ([string]::IsNullOrWhiteSpace($AutoCopy)) {
-    Write-Host ""
-    Write-Host "NextPrompt clipboard preference"
-    Write-Host "Automatically copy suggested next prompts to your clipboard?"
-    Write-Host "Y = automatic copy (default); N = display only."
-    Write-Host "Other local applications may read clipboard contents."
-    try {
-        while ([string]::IsNullOrWhiteSpace($AutoCopy)) {
-            $answer = (Read-Host "Choose Y or N [Y]").Trim().ToLowerInvariant()
-            switch ($answer) {
-                { $_ -in @("", "y", "yes") } { $AutoCopy = "on" }
-                { $_ -in @("n", "no") } { $AutoCopy = "off" }
-                default { Write-Host "Please enter Y or N." }
-            }
-        }
+function ConvertFrom-ChoicePair {
+    param([string]$Pair)
+    # First letter: automatic copy; second letter: desktop notifications.
+    if ($Pair -notmatch "^[yn][yn]$") {
+        return $null
     }
-    catch {
-        throw "Clipboard preference was not saved. Rerun interactively, or pass -AutoCopy on|off explicitly."
-    }
+    return @(
+        $(if ($Pair[0] -eq "y") { "on" } else { "off" }),
+        $(if ($Pair[1] -eq "y") { "on" } else { "off" })
+    )
 }
 
-& $python.Command @pythonArgs (Join-Path $repoRoot "scripts\nextprompt.py") setup --auto-copy $AutoCopy
+# A flag skips the questions; a setting without a flag keeps the recommended value.
+if ([string]::IsNullOrWhiteSpace($AutoCopy) -and [string]::IsNullOrWhiteSpace($Notify)) {
+    Write-Host ""
+    Write-Host "推荐设置 / Recommended settings:"
+    Write-Host "  自动复制到剪贴板：开（推荐） / Automatic clipboard copy: ON (recommended)"
+    Write-Host "  桌面通知：开（推荐） / Desktop notifications: ON (recommended)"
+    Write-Host "其他本地程序可能读取剪贴板。 / Other local applications may read clipboard contents."
+    try {
+        $choice = $null
+        while ($null -eq $choice) {
+            $answer = ((Read-Host "使用推荐设置？ / Keep the recommended settings? [Y/n]") -replace "\s", "").ToLowerInvariant()
+            if ($answer -in @("", "y", "yes")) {
+                $choice = @("on", "on")
+            }
+            elseif ($answer -in @("n", "no")) {
+                Write-Host "输入两个字母：第 1 个是自动复制，第 2 个是桌面通知（y = 开，n = 关）。"
+                Write-Host "Type two letters: 1st = automatic copy, 2nd = desktop notifications (y = on, n = off)."
+                Write-Host "  yn = 复制开、通知关 / copy on, notifications off"
+                Write-Host "  ny = 复制关、通知开 / copy off, notifications on"
+                Write-Host "  nn = 都关 / both off      yy = 都开 / both on"
+                while ($null -eq $choice) {
+                    $pair = ((Read-Host "yn / ny / nn / yy") -replace "\s", "").ToLowerInvariant()
+                    $choice = ConvertFrom-ChoicePair $pair
+                    if ($null -eq $choice) {
+                        Write-Host "请输入 yn、ny、nn 或 yy。 / Please enter yn, ny, nn or yy."
+                    }
+                }
+            }
+            else {
+                # Accept a two-letter answer straight away, e.g. yn.
+                $choice = ConvertFrom-ChoicePair $answer
+                if ($null -eq $choice) {
+                    Write-Host "请输入 Y 或 N。 / Please enter Y or N."
+                }
+            }
+        }
+        $AutoCopy, $Notify = $choice
+    }
+    catch {
+        throw "Preferences were not saved. Rerun interactively, or pass -AutoCopy on|off and -Notify on|off explicitly."
+    }
+}
+if ([string]::IsNullOrWhiteSpace($AutoCopy)) {
+    $AutoCopy = "on"
+}
+if ([string]::IsNullOrWhiteSpace($Notify)) {
+    $Notify = "on"
+}
+
+& $python.Command @pythonArgs (Join-Path $repoRoot "scripts\nextprompt.py") setup --auto-copy $AutoCopy --notify $Notify
 if ($LASTEXITCODE -ne 0) {
-    throw "Could not save the NextPrompt clipboard preference."
+    throw "Could not save the NextPrompt preferences."
 }
 
 Write-Host ""
@@ -199,8 +241,13 @@ if ($AutoCopy -eq "on") {
 else {
     Write-Host "自动复制：关，建议只显示不复制。 / Automatic clipboard copy: OFF. Suggestions will be displayed only."
 }
-Write-Host "桌面通知：默认开，可以单独关闭。 / Desktop notifications: ON by default; you can turn them off without disabling suggestions."
-Write-Host "剪贴板选择已保存，其他已有设置保持不变。 / Your clipboard choice has been saved. Other existing settings are preserved."
+if ($Notify -eq "on") {
+    Write-Host "桌面通知：开，建议准备好时弹出系统通知。 / Desktop notifications: ON. A notification appears when a suggestion is ready."
+}
+else {
+    Write-Host "桌面通知：关。 / Desktop notifications: OFF."
+}
+Write-Host "以上选择已保存，其他已有设置保持不变。 / Your choices have been saved. Other existing settings are preserved."
 Write-Host "不需要再运行 setup。 / No additional setup is required."
 Write-Host ""
 Write-Host "接下来在 Codex 里 / Finish in Codex:"
@@ -214,7 +261,7 @@ Write-Host "   Next prompt: Run the full regression suite and review the final d
 Write-Host "   （仅为示例 / Example only; suggestions depend on the conversation.）"
 Write-Host "   建议不会自动发送，请检查后自己粘贴发送。 / It is never sent automatically; review, paste and send it yourself."
 Write-Host ""
-Write-Host "修改设置或关闭通知：`$nextprompt-setup / Optional: run `$nextprompt-setup to change clipboard copy or turn off notifications."
+Write-Host "以后修改自动复制或通知：`$nextprompt-setup / Optional: run `$nextprompt-setup to change clipboard copy or turn notifications on or off."
 Write-Host "暂停或恢复建议：`$nextprompt-disable、`$nextprompt-enable / Pause or resume suggestions: `$nextprompt-disable or `$nextprompt-enable."
 Write-Host "查看状态或排查：`$nextprompt-status、`$nextprompt-doctor / Help: run `$nextprompt-status or `$nextprompt-doctor."
 Write-Host "If /hooks is unavailable, use a supported Codex client/CLI; automatic suggestions are not verified until the hook loads and is trusted."

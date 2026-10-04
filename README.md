@@ -34,10 +34,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
 需提前安装 Git，并安装、登录 Codex CLI；Python 缺失或低于 3.9 时，Windows 安装脚本会自动安装（优先用 `winget`，没有 `winget` 就从 python.org 下载经过签名校验的官方安装包）。
-安装时询问是否自动复制到剪贴板：**Y 或直接回车开启（默认），N 仅展示**。安装结束报告会说明使用步骤、复制设置和默认开启的桌面通知；通知可通过 `$nextprompt-setup` 关闭，不必关闭任何 Hook。
+安装时先显示推荐设置：**自动复制、桌面通知都开（推荐）**。直接回车（或 Y）保留；输入 N 后再用两个字母分别选择自动复制和通知，例如 `yn` 是复制开、通知关，`ny` 是复制关、通知开，`nn` 是都关。选完才显示安装结束报告：使用步骤、实际保存的复制和通知设置，以及以后如何用 `$nextprompt-setup` 修改，不必关闭任何 Hook。
 
 Install Git, then install and sign in to Codex CLI first. On Windows, the installer installs Python if it is missing or older than 3.9 (through `winget`, or the signature-checked official python.org installer when `winget` is unavailable).
-When asked about clipboard copy, **Y or Enter enables auto-copy (default); N keeps display-only mode**. The final installation report explains how to use NextPrompt, confirms clipboard behavior, and notes that desktop notifications are on by default and can be turned off with `$nextprompt-setup` without disabling a Hook.
+The installer first shows the recommended settings: **auto-copy and desktop notifications both ON**. Press Enter (or Y) to keep them; answer N, then two letters for copy and notifications, such as `yn` (copy on, notifications off), `ny` (copy off, notifications on) or `nn` (both off). Only then does the installation report appear: how to use NextPrompt, the saved copy and notification settings, and how to change them later with `$nextprompt-setup` without disabling a Hook.
 
 安装结束后 / After installation:
 
@@ -46,10 +46,10 @@ When asked about clipboard copy, **Y or Enter enables auto-copy (default); N kee
 3. 首次受信任的会话启动时，NextPrompt 会显示一次使用报告；完成一轮普通对话后，检查建议、粘贴并自行发送。 / On the first trusted session start, NextPrompt shows a one-time usage report; complete a normal turn, then review, paste and send the suggestion yourself.
 
 不需要另行运行 setup。想修改偏好时使用 `$nextprompt-setup`。
-无人值守安装可显式加 `-AutoCopy on` 或 `-AutoCopy off`。
+无人值守安装可显式加 `-AutoCopy on|off` 和 `-Notify on|off`；只给其中一个时，另一个用推荐值（开）。
 
 No separate setup is required. Use `$nextprompt-setup` to change preferences.
-For unattended installation, explicitly pass `-AutoCopy on` or `-AutoCopy off`.
+For unattended installation, pass `-AutoCopy on|off` and `-Notify on|off`; a setting you leave out keeps the recommended value (on).
 
 macOS / Linux（需已安装 Codex；没有 Python 3.9+ 时脚本会自动安装：macOS 用 Homebrew 或苹果命令行工具，Linux 用系统包管理器）：
 
@@ -61,9 +61,9 @@ cd NextPrompt
 sh scripts/install.sh
 ```
 
-安装脚本和 Windows 版一样询问是否自动复制，结束时立刻显示中英文使用说明。无人值守时加 `--auto-copy on` 或 `--auto-copy off`。
+安装脚本和 Windows 版一样先显示推荐设置并询问是否修改，结束时立刻显示中英文使用说明。无人值守时加 `--auto-copy on|off` 和 `--notify on|off`。
 
-Like the Windows installer, it asks about clipboard copy and prints a bilingual usage report as soon as installation finishes. For unattended installation, pass `--auto-copy on` or `--auto-copy off`.
+Like the Windows installer, it shows the recommended settings, asks whether to change them and prints a bilingual usage report as soon as installation finishes. For unattended installation, pass `--auto-copy on|off` and `--notify on|off`.
 
 手动安装 / Manual installation:
 
