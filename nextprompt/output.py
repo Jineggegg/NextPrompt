@@ -6,6 +6,8 @@ import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from .i18n import message
+
 
 @dataclass(frozen=True)
 class SuggestionResult:
@@ -17,15 +19,15 @@ class SuggestionResult:
     clipboard_backend: str
 
 
-def render(result: SuggestionResult, auto_copy: bool) -> str:
+def render(result: SuggestionResult, auto_copy: bool, language: str = "en") -> str:
     if not auto_copy:
-        return f"Next prompt:\n{result.suggestion}"
-    text = f"Next → {result.suggestion}"
+        return f"{message(language, 'display')}\n{result.suggestion}"
+    text = f"{message(language, 'next')} {result.suggestion}"
     if result.copied:
         if result.clipboard_backend.startswith("OSC 52"):
-            return text + "\nClipboard copy requested (OSC 52; unverified)."
-        return text + "\n✓ Copied to clipboard"
-    return text + "\nClipboard unavailable — copy the prompt above manually."
+            return text + "\n" + message(language, "osc52")
+        return text + "\n" + message(language, "copied")
+    return text + "\n" + message(language, "unavailable")
 
 
 class OutputAdapter(ABC):

@@ -6,14 +6,16 @@ NextPrompt 在 Codex 每轮回答完成后，生成一句贴合当前对话的�
 安装时选择 **Y**，建议就会**自动复制到剪贴板**，按 **Ctrl+V**（macOS：**Cmd+V**）即可继续。
 
 - **几秒就绪**：15 轮真实模型测试中，11 轮为 3–5 秒，平均 4.37 秒。
-- **轻量开销**：只取最近 5 条消息，使用轻量模型和 `low` 思考，输出一句简短建议。
+- **轻量开销**：只取最近 5 条消息，使用轻量模型和 `low` 思考，输出一句简短建议；Codex 检查结果缓存 12 小时，每轮少启动 3 次 Codex。
+- **多语言**：用你的语言给建议；提示文字跟随你最近的消息切换，支持 中文（简体/繁體）、日本語、한국어、English、Español、Français、Deutsch、Português、Русский。
 - **自动复制**：支持 Windows、WSL、macOS 和常见 Linux 桌面；也可以选择仅展示。
 - **由你决定发送**：不会自动提交或执行建议。
 
 NextPrompt suggests one short next instruction after each Codex turn. Choose **Y** during installation to **automatically copy suggestions to your clipboard**, then paste with **Ctrl+V** (**Cmd+V** on macOS).
 
 - **Ready in seconds**: 11 of 15 measured turns took 3–5 seconds; average 4.37 seconds.
-- **Lightweight**: the last 5 messages, a lightweight model with `low` reasoning, and one short suggestion.
+- **Lightweight**: the last 5 messages, a lightweight model with `low` reasoning, and one short suggestion; Codex checks are cached for 12 hours, saving three Codex startups per turn.
+- **Multilingual**: suggestions come in your language, and labels follow your latest message: 中文（简体/繁體）、日本語、한국어、English、Español、Français、Deutsch、Português、Русский.
 - **Optional auto-copy**: Windows, WSL, macOS and common Linux desktops; display-only mode is also available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
@@ -64,23 +66,30 @@ Restart Codex and trust the Hook here too. Manual installation defaults to displ
 
 ## 显示示例 / What you see
 
-开启自动复制后 / With auto-copy enabled:
+用中文对话并开启自动复制时 / A Chinese conversation with auto-copy enabled:
 
 ```text
-Next → 运行完整回归测试，检查最终改动。
-✓ Copied to clipboard
+下一句 → 运行完整回归测试，检查最终改动。
+✓ 已复制到剪贴板
 ```
 
-剪贴板里只有建议正文。选择仅展示时显示 `Next prompt:`；复制失败时保留建议供手动复制。
+用英文对话、仅展示时 / An English conversation in display-only mode:
 
-Only the suggestion text is copied. Display-only mode uses `Next prompt:`; if copying fails, the suggestion remains available to copy manually.
+```text
+Next prompt:
+Run the full regression suite and review the final diff.
+```
+
+剪贴板里只有建议正文；复制失败时保留建议供手动复制。想固定界面语言，用 `$nextprompt-setup` 设置 `--language`（如 `zh`、`en`、`ja`）。
+
+Only the suggestion text is copied; if copying fails, the suggestion stays on screen to copy manually. To pin the label language, set `--language` (for example `zh`, `en`, `ja`) with `$nextprompt-setup`.
 
 ## 常用命令 / Commands
 
 | 命令 / Command | 用途 / Purpose |
 | --- | --- |
 | `$nextprompt` | 手动生成建议 / Generate a suggestion |
-| `$nextprompt-setup` | 修改复制与模型设置 / Configure clipboard and model |
+| `$nextprompt-setup` | 修改复制、模型与显示语言 / Configure clipboard, model and language |
 | `$nextprompt-status` | 查看状态 / Show status |
 | `$nextprompt-enable` / `$nextprompt-disable` | 开启 / 关闭 / Enable / Disable |
 | `$nextprompt-doctor` | 检查安装与连接 / Check installation and connection |

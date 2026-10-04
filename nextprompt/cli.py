@@ -15,6 +15,7 @@ from typing import Any
 from .clipboard import SystemClipboardAdapter
 from .config import DEFAULTS, ConfigError, ConfigStore
 from .hook import generate_suggestion
+from .i18n import LANGUAGES
 from .platform import detect_platform
 from .process import run_process
 from .providers import CodexSuggestionProvider, ProviderUnavailable, choose_model
@@ -30,6 +31,8 @@ def status(cfg: dict[str, Any]) -> str:
             f"Enabled:          {'Yes' if cfg['enabled'] else 'No'}",
             f"Auto-copy:        {'Yes' if auto is True else 'No (display only)'}",
             f"Model:            {cfg['model']['name']} (configured)",
+            "Language:         "
+            + ("auto (follows your messages)" if cfg["language"] == "auto" else cfg["language"]),
             f"Context:          Last {cfg['context']['last_messages']} messages",
             f"Max prompt:       {cfg['suggestion']['max_words']} words",
             f"Secret redaction: {'Enabled' if cfg['privacy']['redact_secrets'] else 'Disabled'}",
@@ -73,6 +76,7 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
         "Re-entry protection ✓ hooks/plugins disabled + NEXTPROMPT_INTERNAL",
     ]
     provider = CodexSuggestionProvider(cfg["model"], store.root)
+    provider.clear_cache()  # Doctor re-verifies everything; the next turn starts fresh.
     try:
         rows.append("Codex CLI           ✓ " + provider.check_cli().replace("codex-cli ", ""))
         auth = run_process([provider.executable(), "login", "status"], timeout=3)
@@ -138,6 +142,7 @@ def parser() -> argparse.ArgumentParser:
     setup.add_argument("--redaction", choices=("on", "off"))
     setup.add_argument("--osc52", choices=("on", "off"))
     setup.add_argument("--trigger-mode", choices=("every_turn", "manual"))
+    setup.add_argument("--language", choices=("auto", *LANGUAGES))
     for command in ("status", "enable", "disable"):
         commands.add_parser(command)
     check = commands.add_parser("doctor")
@@ -165,6 +170,7 @@ def run(args: argparse.Namespace) -> int:
                 "redaction",
                 "osc52",
                 "trigger_mode",
+                "language",
             )
         )
         if args.auto_copy is None and not settings_requested:
@@ -199,6 +205,8 @@ def run(args: argparse.Namespace) -> int:
                 cfg["enabled"] = args.enabled == "on"
             if args.trigger_mode is not None:
                 cfg["trigger_mode"] = args.trigger_mode
+            if args.language is not None:
+                cfg["language"] = args.language
 
         cfg = store.update(configure)
         print("NextPrompt configured.\n" + status(cfg))

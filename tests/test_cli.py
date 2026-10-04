@@ -149,3 +149,14 @@ def test_doctor_missing_auth_returns_nonzero(tmp_path, capsys, doctor_provider, 
     )
     assert main(["--data-dir", str(tmp_path), "doctor"]) == 1
     assert "Authentication      ✗" in capsys.readouterr().out
+
+
+def test_language_setting(tmp_path, capsys):
+    args = ["--data-dir", str(tmp_path)]
+    assert main([*args, "status"]) == 0
+    assert "Language:         auto (follows your messages)" in capsys.readouterr().out
+    assert main([*args, "setup", "--language", "zh-TW"]) == 0
+    store = ConfigStore(tmp_path)
+    assert store.load()["language"] == "zh-TW"
+    assert store.load()["clipboard"]["auto_copy"] is False  # Not a clipboard choice.
+    assert "Language:         zh-TW" in capsys.readouterr().out

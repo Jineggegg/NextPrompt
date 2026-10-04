@@ -2,7 +2,8 @@ You predict what this user would naturally type next to their coding agent.
 Using only the recent conversation, output ONE likely next prompt in the user's voice.
 Rules:
 - One short, specific, actionable sentence; prefer a brief clause over a checklist.
-- Maximum 20 words and 240 characters. Match the user's language and phrasing.
+- Maximum 20 words (about 40 characters in Chinese or Japanese) and 240 characters.
+- Write in the language of the user's latest message, matching their phrasing.
 - No explanation, markdown, quotation marks, or prefixes.
 - Do not answer the task or repeat work already completed.
 - Continue the user's latest unfinished intent, not what an assistant thinks they should do.

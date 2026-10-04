@@ -52,6 +52,11 @@ one short suggestion or nothing when the response is invalid or unhelpful.
 - No automatic execution, repository scan, transcript database or NextPrompt telemetry.
 - Setup, status, enable, disable, manual suggestion and doctor skills.
 - Fail-open errors, 15-second inference deadline and recursion protection.
+- Multilingual: suggestions follow the user's language; labels follow the latest user
+  message or a configured `language` (en, zh, zh-TW, ja, ko, es, fr, de, pt, ru).
+  Length limits, generic-reply filters and completed-work guards understand Chinese,
+  Japanese, Korean and other scripts, not only English.
+- A 12-hour capability cache skips repeated Codex checks on later turns.
 
 ## Compatibility and verified interfaces
 
@@ -256,6 +261,18 @@ Next prompt:
 Run the full regression suite and review the final diff.
 ```
 
+Labels follow the language of your latest message. A Chinese conversation shows:
+
+```text
+下一句 → 运行完整回归测试，检查最终改动。
+✓ 已复制到剪贴板
+```
+
+Chinese (Simplified/Traditional), Japanese, Korean and Russian are recognized from
+their scripts; other conversations use English labels unless you pin a language with
+`setup --language en|zh|zh-TW|ja|ko|es|fr|de|pt|ru` (`auto` restores detection).
+The suggestion itself is always written in the language of your latest message.
+
 Manual `$nextprompt` uses only visible conversation supplied by the skill on stdin;
 it does not search session directories. Hook mode reads only the supplied transcript
 path. Management/manual skill turns may also receive a normal Stop suggestion;
@@ -266,7 +283,7 @@ use `trigger_mode: "manual"` if you only want explicit invocation.
 ```text
 Root Stop → re-entry/config guards → supplied transcript tail
           → visible prose → redact → last five → strict context limits
-          → discover lightweight model → isolated, ephemeral codex exec
+          → cached or fresh model discovery → isolated, ephemeral codex exec
           → sanitize/obvious-repeat checks → optional clipboard → Hook systemMessage
 ```
 
@@ -291,6 +308,12 @@ discovery is suppressed. `NEXTPROMPT_INTERNAL=1` plus `--disable hooks` and
 tools that cannot all be disabled through public flags; the current lightweight
 model integration verified absence of shell, web, MCP and patch tools. Read-only
 is an additional boundary, not a claim of a universal tools-free CLI API.
+
+After a successful suggestion, NextPrompt caches the verified Codex executable
+fingerprint and model catalog in `codex-cache.json` under plugin data for 12 hours.
+Later turns skip `codex exec --help`, `codex --version` and app-server discovery.
+A Codex upgrade, a model setting change, a rejected model or Doctor refreshes it.
+The cache never contains conversation text.
 
 Stop is a completion checkpoint, before Codex applies the aggregate decisions of
 other Stop hooks. If another plugin requests continuation, this hook cannot observe
@@ -343,6 +366,7 @@ Defaults:
   "version": 1,
   "enabled": true,
   "trigger_mode": "every_turn",
+  "language": "auto",
   "clipboard": {"auto_copy": false, "osc52_fallback": false},
   "context": {
     "last_messages": 5,
@@ -362,7 +386,8 @@ configurations skip the hook without showing a traceback. Writes use a short
 exclusive lock, unique temporary file, fsync and atomic replacement. A leftover
 `.config.lock` after an interrupted settings update can be removed once no settings
 operation is active. No suggestion files, transcript caches or usage profiles exist.
-Only empty error marker files are retained; older setup markers are ignored. Repeated model errors are shown
+Only empty error marker files and the capability cache (Codex fingerprint and model
+catalog, no conversation) are retained; older setup markers are ignored. Repeated model errors are shown
 at most once per category per hour; unexpected errors are silent.
 
 `every_turn` is the automatic default. `manual` disables automatic generation.
@@ -420,6 +445,11 @@ Authentication, quota, timeout, network and unknown errors stop immediately; the
 not trigger model hopping. No expensive tier is selected automatically.
 Existing explicit `none`/`minimal` settings remain respected for the configured
 model; new settings default to `low`. High reasoning is never selected by V1.
+
+Suggestions are limited to one sentence of at most 20 words and 240 characters.
+For scripts written without spaces, about two Chinese/Japanese characters (or four
+Thai-like letters) count as one word, so a Chinese suggestion is at most about 40
+characters.
 
 The suggestion style is inspired by Claude-style prompt continuation: predict what
 the user would naturally type next, in their language, as one short specific clause.

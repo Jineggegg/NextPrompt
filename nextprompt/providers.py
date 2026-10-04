@@ -24,6 +24,9 @@ LIGHTWEIGHT_MODELS = (
 )
 EFFORT_ORDER = ("none", "minimal", "low")
 INSTRUCTION_PATH = Path(__file__).with_name("instruction.txt")
+# Capability cache: verified CLI + model catalog only, never conversation content.
+CACHE_NAME = "codex-cache.json"
+CACHE_TTL_SECONDS = 12 * 3600
 
 
 class ProviderUnavailable(RuntimeError):
@@ -131,6 +134,66 @@ class CodexSuggestionProvider(SuggestionProvider):
         self.settings = settings
         self.data_root = data_root
         self.selection: ModelSelection | None = None
+
+    def _fingerprint(self, executable: str) -> list[Any] | None:
+        # A Codex upgrade or a model setting change invalidates the cache.
+        try:
+            stat = os.stat(executable)
+        except OSError:
+            return None
+        return [
+            executable,
+            stat.st_mtime_ns,
+            stat.st_size,
+            self.settings["name"],
+            self.settings["reasoning"],
+        ]
+
+    def _cached_models(self, executable: str) -> list[dict[str, Any]] | None:
+        fingerprint = self._fingerprint(executable)
+        if fingerprint is None:
+            return None
+        try:
+            data = json.loads((self.data_root / CACHE_NAME).read_text(encoding="utf-8"))
+            if (
+                data["codex"] == fingerprint
+                and 0 <= time.time() - data["time"] < CACHE_TTL_SECONDS
+                and isinstance(data["models"], list)
+            ):
+                return [m for m in data["models"] if isinstance(m, dict)]
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        return None
+
+    def _store_models(self, executable: str, models: list[dict[str, Any]]) -> None:
+        fingerprint = self._fingerprint(executable)
+        if fingerprint is None:
+            return
+        catalog = [
+            {
+                key: m[key]
+                for key in ("model", "id", "hidden", "supportedReasoningEfforts")
+                if key in m
+            }
+            for m in models
+        ]
+        data = {"codex": fingerprint, "time": time.time(), "models": catalog}
+        try:
+            fd, name = tempfile.mkstemp(prefix=".cache-", suffix=".tmp", dir=self.data_root)
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as out:
+                    json.dump(data, out)
+                os.replace(name, self.data_root / CACHE_NAME)
+            finally:
+                Path(name).unlink(missing_ok=True)
+        except (OSError, TypeError, ValueError):
+            pass
+
+    def clear_cache(self) -> None:
+        try:
+            (self.data_root / CACHE_NAME).unlink(missing_ok=True)
+        except OSError:
+            pass
 
     @staticmethod
     def _environment() -> dict[str, str]:
@@ -254,11 +317,17 @@ class CodexSuggestionProvider(SuggestionProvider):
         try:
             with tempfile.TemporaryDirectory(prefix="inference-", dir=self.data_root) as name:
                 work = Path(name)
-                self.check_cli(timeout=min(2, budget()))
-                models = self.discover_models(work, timeout=min(4, budget()))
+                executable = self.executable()
+                # Skip three Codex startups per turn while the verified CLI is unchanged.
+                models = self._cached_models(executable)
+                cached = models is not None
+                if models is None:
+                    self.check_cli(timeout=min(2, budget()))
+                    models = self.discover_models(work, timeout=min(4, budget()))
                 candidates = model_candidates(
                     models, self.settings["name"], self.settings["reasoning"]
                 )
+                rejected: set[str] = set()
                 for candidate in candidates:
                     result = run_process(
                         self.inference_command(candidate, work),
@@ -270,12 +339,22 @@ class CodexSuggestionProvider(SuggestionProvider):
                     if result.returncode:
                         category = failure_category(result.stderr)
                         if category == "model":
+                            # Remember the rejection instead of retrying it every turn.
+                            self.clear_cache()
+                            rejected.add(candidate.name)
+                            cached = False
                             continue
                         # Auth, quota, transport and unknown errors do not justify
                         # charging another model. All attempts share one deadline.
                         raise ProviderUnavailable(category)
+                    text = result.stdout.decode("utf-8", "strict")
                     self.selection = candidate
-                    return result.stdout.decode("utf-8", "strict")
+                    if not cached:
+                        self._store_models(
+                            executable,
+                            [m for m in models if m.get("model", m.get("id")) not in rejected],
+                        )
+                    return text
                 raise ProviderUnavailable("model")
         except subprocess.TimeoutExpired:
             raise ProviderUnavailable("timeout") from None

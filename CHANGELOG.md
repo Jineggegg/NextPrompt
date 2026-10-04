@@ -11,6 +11,15 @@
   setting) instead of a generic message; Doctor reports an invalid config and still
   runs its remaining checks.
 - Report the package version consistently, including to Codex's app-server.
+- Multilingual: labels follow the latest user message (Simplified/Traditional
+  Chinese, Japanese, Korean, Russian) or a new `language` setting (also English,
+  Spanish, French, German, Portuguese); the model writes in the user's latest language.
+  Word limits count unspaced scripts by characters (about 40 Chinese characters),
+  and generic-reply, assistant-voice and completed-work filters cover CJK and more.
+- Cache the verified Codex CLI and model catalog for 12 hours after a successful
+  suggestion, skipping three Codex startups per turn. Upgrades, model setting
+  changes, rejected models and Doctor refresh it; it never stores conversation text.
+- Strip inline code backticks from suggestions instead of discarding them.
 
 ## 0.1.5 — 2026-10-04
 

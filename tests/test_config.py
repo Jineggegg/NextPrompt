@@ -33,6 +33,8 @@ def test_defaults_do_not_grant_consent_or_write(tmp_path):
         {"unexpected": True},
         {"privacy": {"redact_secrets": "yes"}},
         {"clipboard": []},
+        {"language": "klingon"},
+        {"language": None},
     ],
 )
 def test_invalid_config(raw):

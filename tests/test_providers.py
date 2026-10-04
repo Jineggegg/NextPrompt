@@ -1,9 +1,11 @@
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
 
 from nextprompt.providers import (
+    CACHE_TTL_SECONDS,
     CodexSuggestionProvider,
     ModelSelection,
     ProviderUnavailable,
@@ -216,3 +218,82 @@ def test_fallback_cannot_reset_deadline(monkeypatch, fallback_provider, tmp_path
         fallback_provider.generate("USER:\nSafe synthetic context.\n")
     assert len(calls) == 1
     assert not list(tmp_path.iterdir())
+
+
+@pytest.fixture
+def cached_provider(monkeypatch, settings, tmp_path):
+    """A provider whose Codex executable is a real file, so the cache can fingerprint it."""
+    executable = tmp_path / "bin" / "codex"
+    executable.parent.mkdir()
+    executable.write_text("fake codex")
+    data = tmp_path / "data"
+    provider = CodexSuggestionProvider(settings["model"], data)
+    calls = {"check": 0, "discover": 0, "infer": []}
+
+    def check_cli(**k):
+        calls["check"] += 1
+        return "ok"
+
+    def discover_models(*a, **k):
+        calls["discover"] += 1
+        return [model("gpt-5.6-luna"), model("gpt-6-luna")]
+
+    def infer(command, **kwargs):
+        name = command[command.index("-m") + 1]
+        calls["infer"].append(name)
+        if name in calls.get("reject", ()):
+            return subprocess.CompletedProcess(command, 1, b"", b"Model not found")
+        return subprocess.CompletedProcess(command, 0, b"Review the final diff.")
+
+    monkeypatch.setattr(provider, "check_cli", check_cli)
+    monkeypatch.setattr(provider, "discover_models", discover_models)
+    monkeypatch.setattr(provider, "executable", lambda: str(executable))
+    monkeypatch.setattr("nextprompt.providers.run_process", infer)
+    return provider, calls, executable, data
+
+
+def test_cache_skips_cli_checks_on_later_turns(cached_provider):
+    provider, calls, _, data = cached_provider
+    for _ in range(3):
+        assert provider.generate("USER:\nSECRET-CONTEXT-MARKER\n") == "Review the final diff."
+    assert (calls["check"], calls["discover"]) == (1, 1)
+    assert calls["infer"] == ["gpt-5.6-luna"] * 3
+    assert [p.name for p in data.iterdir()] == ["codex-cache.json"]
+    assert "SECRET-CONTEXT-MARKER" not in (data / "codex-cache.json").read_text()
+
+
+def test_cache_invalidated_by_codex_upgrade_or_model_setting(cached_provider):
+    provider, calls, executable, _ = cached_provider
+    provider.generate("USER:\nA.\n")
+    executable.write_text("upgraded fake codex binary")
+    provider.generate("USER:\nB.\n")
+    assert calls["discover"] == 2
+    provider.settings = {**provider.settings, "name": "gpt-6-luna"}
+    provider.generate("USER:\nC.\n")
+    assert calls["discover"] == 3
+
+
+def test_cache_expires(cached_provider, monkeypatch):
+    provider, calls, _, _ = cached_provider
+    provider.generate("USER:\nA.\n")
+    later = time.time() + CACHE_TTL_SECONDS + 1
+    monkeypatch.setattr("nextprompt.providers.time.time", lambda: later)
+    provider.generate("USER:\nB.\n")
+    assert calls["discover"] == 2
+
+
+def test_rejected_model_is_not_retried_from_cache(cached_provider):
+    provider, calls, _, _ = cached_provider
+    calls["reject"] = {"gpt-5.6-luna"}
+    provider.generate("USER:\nA.\n")
+    provider.generate("USER:\nB.\n")
+    assert calls["infer"] == ["gpt-5.6-luna", "gpt-6-luna", "gpt-6-luna"]
+    assert calls["discover"] == 1
+
+
+def test_corrupt_cache_is_ignored(cached_provider):
+    provider, calls, _, data = cached_provider
+    data.mkdir()
+    (data / "codex-cache.json").write_text("{not json")
+    assert provider.generate("USER:\nA.\n") == "Review the final diff."
+    assert calls["discover"] == 1

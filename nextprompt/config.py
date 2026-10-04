@@ -12,12 +12,14 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from .i18n import LANGUAGES
 from .redact import redact
 
 DEFAULTS: dict[str, Any] = {
     "version": 1,
     "enabled": True,
     "trigger_mode": "every_turn",
+    "language": "auto",
     "clipboard": {"auto_copy": False, "osc52_fallback": False},
     "context": {"last_messages": 5, "max_chars_per_message": 2500, "max_total_chars": 8000},
     "model": {"name": "gpt-5.6-luna", "reasoning": "low", "timeout_seconds": 15},
@@ -69,6 +71,8 @@ def validate_config(raw: object) -> dict[str, Any]:
         raise ConfigError("invalid clipboard consent")
     if cfg["trigger_mode"] not in ("every_turn", "manual", "code_change_only"):
         raise ConfigError("invalid trigger mode")
+    if cfg["language"] not in ("auto", *LANGUAGES):
+        raise ConfigError("invalid language")
     limits = [
         (cfg["context"]["last_messages"], 1, 5),
         (cfg["context"]["max_chars_per_message"], 1, 2500),

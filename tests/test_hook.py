@@ -117,6 +117,49 @@ def test_provider_fail_open_and_cooldown(configured, provider, error):
     )
 
 
+def chinese_conversation():
+    return Mock(
+        read=Mock(
+            return_value=[
+                Message("user", "帮我修复登录跳转的问题。"),
+                Message("assistant", "已修复，相关测试通过。"),
+            ]
+        )
+    )
+
+
+def test_labels_follow_the_users_language(configured, provider, clipboard):
+    provider.generate.return_value = "运行完整回归测试，检查最终改动。"
+    text = handle_stop(
+        PAYLOAD, store=configured, conversation=chinese_conversation(), provider=provider
+    )
+    assert text == "下一句：\n运行完整回归测试，检查最终改动。"
+    configured.update(lambda cfg: cfg["clipboard"].update(auto_copy=True))
+    text = handle_stop(
+        PAYLOAD,
+        store=configured,
+        conversation=chinese_conversation(),
+        provider=provider,
+        clipboard=clipboard,
+    )
+    assert text == "下一句 → 运行完整回归测试，检查最终改动。\n✓ 已复制到剪贴板"
+    clipboard.copy.assert_called_once_with("运行完整回归测试，检查最终改动。")
+
+
+def test_configured_language_overrides_detection(configured, provider):
+    configured.update(lambda cfg: cfg.update(language="ja"))
+    text = handle_stop(PAYLOAD, store=configured, conversation=conversation(), provider=provider)
+    assert text.startswith("次のプロンプト：\n")
+
+
+def test_skipped_notice_is_localized(configured, provider):
+    provider.generate.side_effect = ProviderUnavailable("model")
+    text = handle_stop(
+        PAYLOAD, store=configured, conversation=chinese_conversation(), provider=provider
+    )
+    assert text == "NextPrompt 已跳过：建议模型暂不可用。"
+
+
 @pytest.mark.parametrize(
     "payload",
     [

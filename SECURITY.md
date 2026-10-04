@@ -5,8 +5,8 @@
 V1 reads a bounded tail of the transcript path supplied by the official root Stop
 hook, selects at most five natural-language messages and redacts common credentials
 before inference. No transcript database, telemetry, remote NextPrompt backend or
-raw-content logs are implemented. Only settings and empty error cooldown
-markers persist. The child Codex uses ephemeral sessions; the parent Codex's own
+raw-content logs are implemented. Only settings, empty error cooldown markers and
+a capability cache (Codex executable fingerprint and model catalog) persist. The child Codex uses ephemeral sessions; the parent Codex's own
 session storage is outside this plugin's control.
 
 Redaction is defense in depth, not a complete data-loss prevention system. Unknown

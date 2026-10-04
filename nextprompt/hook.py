@@ -8,6 +8,7 @@ from typing import Any
 
 from .clipboard import ClipboardAdapter, SystemClipboardAdapter
 from .config import ConfigStore
+from .i18n import message, resolve_language
 from .output import SuggestionResult, render
 from .providers import CodexSuggestionProvider, ProviderUnavailable, SuggestionProvider
 from .suggestion import obvious_repeat, sanitize
@@ -26,6 +27,7 @@ def generate_suggestion(
     store: ConfigStore,
     provider: SuggestionProvider | None = None,
     clipboard: ClipboardAdapter | None = None,
+    language: str | None = None,
 ) -> str | None:
     context = bounded_messages(messages, cfg["context"], cfg["privacy"]["redact_secrets"])
     if not context:
@@ -55,7 +57,15 @@ def generate_suggestion(
         copied,
         backend,
     )
-    return render(result, auto_copy)
+    if language is None:
+        language = conversation_language(cfg, context)
+    return render(result, auto_copy, language)
+
+
+def conversation_language(cfg: dict[str, Any], messages: list[Message]) -> str:
+    """Display language: configured, else the latest user message's script."""
+    users = (m.text for m in reversed(messages) if m.role == "user")
+    return resolve_language(cfg["language"], users)
 
 
 def handle_stop(
@@ -72,6 +82,7 @@ def handle_stop(
         return None
     if payload.get("stop_hook_active") is True:
         return None
+    language = "en"
     try:
         store = store or ConfigStore()
         cfg = store.load()
@@ -82,11 +93,12 @@ def handle_stop(
             return None
         conversation = conversation or CodexConversationAdapter(cfg["privacy"]["redact_secrets"])
         messages = conversation.read(Path(path))
-        return generate_suggestion(messages, cfg, store, provider, clipboard)
+        language = conversation_language(cfg, messages)
+        return generate_suggestion(messages, cfg, store, provider, clipboard, language)
     except ProviderUnavailable as exc:
         try:
             if store and store.error_notice(str(exc)):
-                return "NextPrompt skipped: suggestion model unavailable."
+                return message(language, "skipped")
         except Exception:
             pass
     except Exception:

@@ -1,6 +1,6 @@
 ---
 name: nextprompt-setup
-description: Configure NextPrompt, choose automatic clipboard copy or display only, change the model, context limits or OSC 52 settings. Use for Configure NextPrompt or Turn NextPrompt clipboard copy off.
+description: Configure NextPrompt, choose automatic clipboard copy or display only, change the model, display language, context limits or OSC 52 settings. Use for Configure NextPrompt or Turn NextPrompt clipboard copy off.
 ---
 
 Locate this installed skill's absolute SKILL.md path. The plugin root is two
@@ -34,6 +34,8 @@ Do not pipe an interactive question into a tool. The flags work non-interactivel
 
 Optional user-requested settings: `--enabled on|off`, `--model MODEL`,
 `--context-messages 1..5`, `--max-words 1..20`, `--redaction on|off`,
-`--osc52 on|off`, `--trigger-mode every_turn|manual`. OSC 52 defaults off and is
+`--osc52 on|off`, `--trigger-mode every_turn|manual`,
+`--language auto|en|zh|zh-TW|ja|ko|es|fr|de|pt|ru` (labels; `auto` follows the
+user's latest message). OSC 52 defaults off and is
 unverified best effort; clipboard contents can be read by other local applications.
 Show the CLI's concise configuration result. Never generate or execute a coding task.

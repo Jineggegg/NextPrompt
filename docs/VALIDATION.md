@@ -3,9 +3,12 @@
 ## v0.1.6 — 2026-10-04, pre-release review and full regression
 
 - Linux, Python 3.10 / 3.11 / 3.12 / 3.13 with real Codex CLI **0.160.0** and
-  `NEXTPROMPT_RUN_CLI_INTEGRATION=1`: **248 passed, 21 skipped** on each version
+  `NEXTPROMPT_RUN_CLI_INTEGRATION=1`: **303 passed, 21 skipped** on each version
   (the skips are Windows-only installer cases). Integration and hook suites also
   passed with Codex **0.159.0**. Ruff lint/format passed.
+- Capability cache against real Codex 0.160.0 and the local simulated model: NextPrompt's
+  own overhead per turn fell from 0.77–1.64 s (cold) to 0.24–0.32 s (cached). Remote
+  model latency is added on top and was not re-measured.
 - GitHub Actions on Ubuntu, macOS and Windows with Python 3.10 and 3.12: all green;
   Windows ran the 21 installer cases and the new `cmd.exe` hook-command cases.
 - Real Codex 0.160.0 confirmed that the Hook's injected `PLUGIN_DATA` equals the
