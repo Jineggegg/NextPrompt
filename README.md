@@ -51,20 +51,30 @@ When asked about clipboard copy, **Y or Enter enables auto-copy (default); N kee
 No separate setup is required. Use `$nextprompt-setup` to change preferences.
 For unattended installation, explicitly pass `-AutoCopy on` or `-AutoCopy off`.
 
-macOS / Linux 或手动安装（需已有 Python 3.9+ 的 `python` 或 `python3` 命令，macOS 自带的即可，以及 Codex）：
+macOS / Linux（需已有 Python 3.9+ 的 `python` 或 `python3` 命令，macOS 自带的即可，以及 Codex）：
 
-macOS / Linux or manual installation (Python 3.9+ as `python` or `python3`, including the one bundled with macOS, plus Codex):
+macOS / Linux (Python 3.9+ as `python` or `python3`, including the one bundled with macOS, plus Codex):
 
 ```sh
 git clone https://github.com/Jineggegg/NextPrompt.git
 cd NextPrompt
+sh scripts/install.sh
+```
+
+安装脚本和 Windows 版一样询问是否自动复制，结束时立刻显示中英文使用说明。无人值守时加 `--auto-copy on` 或 `--auto-copy off`。
+
+Like the Windows installer, it asks about clipboard copy and prints a bilingual usage report as soon as installation finishes. For unattended installation, pass `--auto-copy on` or `--auto-copy off`.
+
+手动安装 / Manual installation:
+
+```sh
 codex plugin marketplace add .
 codex plugin add nextprompt@nextprompt
 ```
 
-同样需要重启并信任 Hook；手动安装同样默认自动复制并弹通知，可用 `$nextprompt-setup` 关闭。
+Codex 自带的安装命令不会显示说明，说明会在重启并信任 Hook 后的第一次会话出现；手动安装同样默认自动复制并弹通知，可用 `$nextprompt-setup` 关闭。
 
-Restart Codex and trust the Hook here too. Manual installation also copies and notifies by default; turn either off with `$nextprompt-setup`.
+Codex's own install commands print no instructions; the usage report appears at the first session after you restart and trust the Hook. Manual installation also copies and notifies by default; turn either off with `$nextprompt-setup`.
 
 ## 显示示例 / What you see
 

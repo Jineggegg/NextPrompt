@@ -111,7 +111,19 @@ PowerShell process and does not change the user's system policy. If `winget` is
 unavailable, the script stops with instructions instead of downloading an unverified
 installer or requesting elevation.
 
-Manual or non-Windows install:
+macOS / Linux install:
+
+```sh
+git clone https://github.com/Jineggegg/NextPrompt.git
+cd NextPrompt
+sh scripts/install.sh            # add --auto-copy on|off for unattended use, --probe to test inference
+```
+
+The script registers the plugin, runs the doctor, saves the clipboard choice and prints
+the same restart, `/hooks` trust and usage steps as the Windows installer.
+
+Manual install (Codex prints no NextPrompt instructions; the one-time report appears at
+the first trusted session):
 
 ```sh
 git clone https://github.com/Jineggegg/NextPrompt.git
