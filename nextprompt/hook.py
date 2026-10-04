@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -10,7 +11,7 @@ from .clipboard import ClipboardAdapter, SystemClipboardAdapter
 from .config import ConfigStore
 from .i18n import message, resolve_language
 from .notify import send_notification
-from .output import SuggestionResult, render
+from .output import SuggestionResult, render, render_copy_status
 from .providers import CodexSuggestionProvider, ProviderUnavailable, SuggestionProvider
 from .suggestion import obvious_repeat, sanitize
 from .transcript import (
@@ -19,6 +20,13 @@ from .transcript import (
     Message,
     bounded_messages,
     format_context,
+)
+
+INLINE_PATH = Path(__file__).with_name("inline.txt")
+# The line the root model writes under the inline instruction. Optional bold, quote
+# or list markers are formatting, not part of the prompt.
+INLINE_LINE = re.compile(
+    r"^\s*(?:[>*_-]\s*)*next prompt(?:\*\*|__)?\s*[:：]\s*(?:\*\*|__)?\s*(.+)$", re.I
 )
 
 
@@ -38,6 +46,24 @@ def generate_suggestion(
     text = sanitize(provider.generate(format_context(context)), **cfg["suggestion"])
     if not text or obvious_repeat(text, context):
         return None
+    selection = getattr(provider, "selection", None)
+    model = selection.name if selection else cfg["model"]["name"]
+    if language is None:
+        language = conversation_language(cfg, context)
+    return deliver(text, cfg, "codex", model, len(context), clipboard, language, notify)
+
+
+def deliver(
+    text: str,
+    cfg: dict[str, Any],
+    provider: str,
+    model: str,
+    context_messages: int,
+    clipboard: ClipboardAdapter | None,
+    language: str,
+    notify: bool,
+    inline: bool = False,
+) -> str | None:
     # On unless explicitly turned off; legacy unset (None) follows the default.
     auto_copy = cfg["clipboard"]["auto_copy"] is not False
     copied, backend = False, "unavailable"
@@ -51,24 +77,46 @@ def generate_suggestion(
             backend = clipboard.backend_name()
         except Exception:
             copied = False
-    selection = getattr(provider, "selection", None)
-    result = SuggestionResult(
-        text,
-        "codex",
-        selection.name if selection else cfg["model"]["name"],
-        len(context),
-        copied,
-        backend,
-    )
-    if language is None:
-        language = conversation_language(cfg, context)
+    result = SuggestionResult(text, provider, model, context_messages, copied, backend)
     if notify:
         # Desktop apps may not show hook messages; this marks the moment to paste.
         try:
             send_notification(message(language, "notify_copied" if copied else "notify"), text)
         except Exception:
             pass
+    if inline:
+        # The reply already shows the prompt; only report the copy outcome.
+        return render_copy_status(result, language) if auto_copy else None
     return render(result, auto_copy, language)
+
+
+def inline_suggestion(last_reply: object, cfg: dict[str, Any]) -> str | None:
+    """The root model's own `Next prompt:` line from the end of its final reply."""
+    if not isinstance(last_reply, str) or not last_reply.strip():
+        return None
+    lines = [line for line in last_reply.splitlines() if line.strip()][-3:]
+    for line in reversed(lines):
+        if match := INLINE_LINE.match(line):
+            text = sanitize(match.group(1), **cfg["suggestion"])
+            if text and not obvious_repeat(text, [Message("assistant", last_reply)]):
+                return text
+            return None
+    return None
+
+
+def handle_session_start(payload: object, *, store: ConfigStore | None = None) -> str | None:
+    """Inline mode: ask the root model to end each reply with one `Next prompt:` line."""
+    if os.environ.get("NEXTPROMPT_INTERNAL") == "1":
+        return None
+    if not isinstance(payload, dict) or payload.get("hook_event_name") != "SessionStart":
+        return None
+    try:
+        cfg = (store or ConfigStore()).load()
+        if cfg["enabled"] and cfg["trigger_mode"] == "every_turn" and cfg["source"] == "inline":
+            return INLINE_PATH.read_text(encoding="utf-8").strip()
+    except Exception:
+        pass
+    return None
 
 
 def conversation_language(cfg: dict[str, Any], messages: list[Message]) -> str:
@@ -97,6 +145,15 @@ def handle_stop(
         cfg = store.load()
         if not cfg["enabled"] or cfg["trigger_mode"] != "every_turn":
             return None
+        if cfg["source"] == "inline":
+            text = inline_suggestion(payload.get("last_assistant_message"), cfg)
+            if text:
+                # The prompt is written in the user's language.
+                language = resolve_language(cfg["language"], [text])
+                return deliver(
+                    text, cfg, "inline", "root", 1, clipboard, language, cfg["notify"], True
+                )
+            # No usable line: fall back to the separate suggestion model below.
         path = payload.get("transcript_path")
         if not isinstance(path, str) or not path:
             return None

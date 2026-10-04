@@ -30,6 +30,15 @@ def render(result: SuggestionResult, auto_copy: bool, language: str = "en") -> s
     return text + "\n" + message(language, "unavailable")
 
 
+def render_copy_status(result: SuggestionResult, language: str = "en") -> str:
+    """Copy outcome alone, for prompts the reply already shows."""
+    if not result.copied:
+        return message(language, "unavailable")
+    if result.clipboard_backend.startswith("OSC 52"):
+        return message(language, "osc52")
+    return message(language, "copied")
+
+
 class OutputAdapter(ABC):
     @abstractmethod
     def encode(self, text: str) -> str: ...
