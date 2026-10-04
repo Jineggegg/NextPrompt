@@ -21,7 +21,7 @@ NextPrompt makes every Codex reply end with a next-step line whose label and sug
 - **Auto-copy + notification by default**: each suggestion is copied and announced with a desktop notification, so you know when to paste; Windows, WSL, macOS and common Linux desktops. Display-only mode is available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
-版本 / Version **0.1.9** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
+版本 / Version **0.1.10** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
 
 ## 安装 / Installation
 
@@ -34,16 +34,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
 需提前安装 Git，并安装、登录 Codex CLI；Python 缺失或版本过旧时，Windows 安装脚本通过 `winget` 自动安装。
-安装时询问是否自动复制到剪贴板：**Y 或直接回车开启（默认），N 仅展示**，结束报告会确认所选模式。
+安装时询问是否自动复制到剪贴板：**Y 或直接回车开启（默认），N 仅展示**。安装结束报告会说明使用步骤、复制设置和默认开启的桌面通知；通知可通过 `$nextprompt-setup` 关闭，不必关闭任何 Hook。
 
 Install Git, then install and sign in to Codex CLI first. On Windows, the installer uses `winget` to install Python if it is missing or too old.
-When asked about clipboard copy, **Y or Enter enables auto-copy (default); N keeps display-only mode**. The final report confirms your choice.
+When asked about clipboard copy, **Y or Enter enables auto-copy (default); N keeps display-only mode**. The final installation report explains how to use NextPrompt, confirms clipboard behavior, and notes that desktop notifications are on by default and can be turned off with `$nextprompt-setup` without disabling a Hook.
 
 安装结束后 / After installation:
 
 1. 完全退出并重新打开 Codex。 / Quit and reopen Codex.
 2. 打开 `/hooks`，检查并信任 NextPrompt 的 SessionStart、UserPromptSubmit 和 Stop Hook。 / Open `/hooks`, review and trust the NextPrompt SessionStart, UserPromptSubmit and Stop Hooks.
-3. 完成一轮普通对话；生成建议后，粘贴、检查，再发送。 / Complete a normal turn, then paste, review and send the suggestion.
+3. 首次受信任的会话启动时，NextPrompt 会显示一次使用报告；完成一轮普通对话后，检查建议、粘贴并自行发送。 / On the first trusted session start, NextPrompt shows a one-time usage report; complete a normal turn, then review, paste and send the suggestion yourself.
 
 不需要另行运行 setup。想修改偏好时使用 `$nextprompt-setup`。
 无人值守安装可显式加 `-AutoCopy on` 或 `-AutoCopy off`。

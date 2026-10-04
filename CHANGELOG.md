@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.10 — 2026-10-04
+
+- On the first trusted SessionStart, display a one-time installation and usage report
+  through the official Hook `systemMessage` field, while preserving the inline
+  instruction through `additionalContext`. The report states the saved clipboard
+  and notification settings, explains manual review/paste/send, and shows how to
+  turn off notifications without disabling a Hook.
+- The Windows installer report now explicitly mentions default-on notifications
+  and how to turn them off. Installation still does not grant Hook trust.
+
 ## 0.1.9 — 2026-10-04
 
 - Every Codex reply now ends with a next-step line by default. Its label and suggestion

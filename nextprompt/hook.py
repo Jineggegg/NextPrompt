@@ -44,6 +44,35 @@ INLINE_LINE = re.compile(
     re.I,
 )
 INLINE_MAX_CHARS = 500
+WELCOME_MARKER = ".welcome-v1"
+
+
+def first_run_report(payload: object, *, store: ConfigStore | None = None) -> str | None:
+    """Show onboarding once, on the first trusted root SessionStart hook."""
+    if os.environ.get("NEXTPROMPT_INTERNAL") == "1":
+        return None
+    if not isinstance(payload, dict) or payload.get("hook_event_name") != "SessionStart":
+        return None
+    try:
+        store = store or ConfigStore()
+        cfg = store.load()
+        if not cfg["enabled"] or not store.notice_once(WELCOME_MARKER):
+            return None
+        copy = "开 / on" if cfg["clipboard"]["auto_copy"] is not False else "关 / off"
+        notify = "开 / on" if cfg["notify"] else "关 / off"
+        return (
+            "NextPrompt 安装完成，已就绪 / Installed and ready.\n"
+            "用法 / Use: 每轮回复结束后会给出一条下一步建议；请自行检查、粘贴并发送，"
+            "插件不会自动发送。 / Review, paste, and send the suggestion yourself; "
+            "it is never sent automatically.\n"
+            f"当前设置 / Current: 自动复制到剪贴板 / auto-copy {copy}；"
+            f"桌面通知 / desktop notification {notify}（默认均开启 / both on by default）。\n"
+            "关闭通知 / Turn notifications off: 使用 $nextprompt-setup 并说“关闭通知” "
+            "/ use $nextprompt-setup and ask to turn notifications off."
+        )
+    except Exception:
+        # Onboarding must never interrupt the session or expose configuration content.
+        return None
 
 
 def generate_suggestion(
