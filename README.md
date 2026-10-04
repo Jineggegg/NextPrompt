@@ -51,9 +51,9 @@ The installer first shows the recommended settings: **auto-copy and desktop noti
 No separate setup is required. Use `$nextprompt-setup` to change preferences.
 For unattended installation, pass `-AutoCopy on|off` and `-Notify on|off`; a setting you leave out keeps the recommended value (on).
 
-macOS / Linux（需已安装 Codex；没有 Python 3.9+ 时脚本会自动安装：macOS 用 Homebrew 或苹果命令行工具，Linux 用系统包管理器）：
+macOS / Linux（需已安装 Codex；没有 Python 3.9+ 时脚本会自动安装：macOS 用 Homebrew 或苹果命令行工具，Linux 用系统包管理器，系统默认的 python3 太旧时改装 `python3.12` 这类带版本号的包）：
 
-macOS / Linux (Codex required; if Python 3.9+ is missing, the script installs it through Homebrew or Apple's Command Line Tools on macOS, or the system package manager on Linux):
+macOS / Linux (Codex required; if Python 3.9+ is missing, the script installs it through Homebrew or Apple's Command Line Tools on macOS, or the system package manager on Linux, which falls back to a versioned package such as `python3.12` when the default `python3` is too old):
 
 ```sh
 git clone https://github.com/Jineggegg/NextPrompt.git

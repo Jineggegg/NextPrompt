@@ -51,14 +51,29 @@ case "$notify" in
     *) fail "--notify must be on or off." ;;
 esac
 
-# Hooks run `python` or `python3`, so the installer accepts the same commands.
+# Same commands as the hook (nextprompt/cli.py HOOK_INTERPRETERS): versioned ones, newest
+# first, find a newer Python installed next to a default python3 older than 3.9.
+versioned_pythons="python3.15 python3.14 python3.13 python3.12 python3.11 python3.10 python3.9"
+
 find_python() {
     python=""
-    for candidate in python3 python; do
+    # shellcheck disable=SC2086 # One word per command name.
+    for candidate in python3 python $versioned_pythons; do
         if command -v "$candidate" >/dev/null 2>&1 &&
             "$candidate" -c "import sys; sys.exit(sys.version_info < (3, 9))" >/dev/null 2>&1; then
             python=$candidate
             return 0
+        fi
+    done
+    return 1
+}
+
+# Prints the default Python that is too old (for example "python3 3.8"), if there is one.
+old_python() {
+    for candidate in python3 python; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            version=$("$candidate" -c "import sys; print('%d.%d' % sys.version_info[:2])" 2>/dev/null) &&
+                [ -n "$version" ] && echo "$candidate $version" && return 0
         fi
     done
     return 1
@@ -74,6 +89,25 @@ as_root() {
     fi
 }
 
+# The default python3 package can be older than 3.9 (Ubuntu 20.04: 3.8, RHEL 8: 3.6,
+# openSUSE Leap 15: 3.6); those releases ship newer Pythons as versioned packages.
+# Tries them newest first and stops at the first that gives a usable command.
+install_versioned() {
+    hash -r 2>/dev/null || true
+    find_python && return 0
+    install_command=$1
+    shift
+    for package in "$@"; do
+        echo "默认的 python3 低于 3.9，正在尝试安装 $package… / The default python3 is older than 3.9. Trying $package..."
+        # shellcheck disable=SC2086 # $install_command is the package manager and its options.
+        if as_root $install_command "$package" >/dev/null 2>&1; then
+            hash -r 2>/dev/null || true
+            find_python && return 0
+        fi
+    done
+    return 0 # The caller reports what is still missing.
+}
+
 # Install Python 3.9+ with the system's own package manager; nothing is downloaded by hand.
 install_python() {
     echo "未找到 Python 3.9+，正在自动安装… / Python 3.9+ was not found. Installing it..."
@@ -86,13 +120,17 @@ install_python() {
             fail "macOS 正在弹窗安装命令行工具（含 Python），装好后请重新运行本脚本。 / macOS is installing the Command Line Tools (which include Python) in a separate window. Finish that, then rerun this script."
         fi
     elif command -v apt-get >/dev/null 2>&1; then
-        as_root apt-get update && as_root apt-get install -y python3
+        as_root apt-get update && as_root apt-get install -y python3 &&
+            install_versioned "apt-get install -y" python3.13 python3.12 python3.11 python3.10 python3.9
     elif command -v dnf >/dev/null 2>&1; then
-        as_root dnf install -y python3
+        as_root dnf install -y python3 &&
+            install_versioned "dnf install -y" python3.13 python3.12 python3.11 python39
     elif command -v yum >/dev/null 2>&1; then
-        as_root yum install -y python3
+        as_root yum install -y python3 &&
+            install_versioned "yum install -y" python3.13 python3.12 python3.11 python39
     elif command -v zypper >/dev/null 2>&1; then
-        as_root zypper --non-interactive install python3
+        as_root zypper --non-interactive install python3 &&
+            install_versioned "zypper --non-interactive install" python313 python312 python311 python310 python39
     elif command -v pacman >/dev/null 2>&1; then
         as_root pacman -S --noconfirm --needed python
     elif command -v apk >/dev/null 2>&1; then
@@ -107,7 +145,12 @@ install_python() {
 
 if ! find_python; then
     install_python
-    find_python || fail "Python was installed, but no python3 or python command with 3.9+ is on PATH. Open a new terminal, then rerun this script."
+    if ! find_python; then
+        if old=$(old_python); then
+            fail "只找到 $old，低于 3.9，也没能自动装上更新的 Python。请自行安装 Python 3.9 或更新版本（例如发行版的 python3.X 软件包、pyenv 或 Homebrew），然后重新运行本脚本。 / Only $old was found, which is older than 3.9, and no newer Python could be installed automatically. Install Python 3.9 or later yourself (for example your distribution's python3.X package, pyenv or Homebrew), then rerun this script."
+        fi
+        fail "Python was installed, but no python3, python or python3.X command with 3.9+ is on PATH. Open a new terminal, then rerun this script."
+    fi
 fi
 command -v codex >/dev/null 2>&1 || fail "Codex CLI is required. Install or repair Codex, then rerun this script."
 

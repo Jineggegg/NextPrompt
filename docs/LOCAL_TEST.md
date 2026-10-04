@@ -4,7 +4,7 @@
 运行环境需要 Codex CLI 0.159.0+，
 并且 `codex exec --help` 必须具有
 `--ignore-user-config`、`--ignore-rules`、`--ephemeral`、`--disable`。运行时需要
-PATH 中有 Python 3.9+ 的 `python` 或 `python3`（macOS 自带的即可）（Hook 会先试 `python`，再回退到 `python3`）；不要把凭据写进 Git URL、脚本或项目文件。
+PATH 中有 Python 3.9+ 的 `python`、`python3` 或 `python3.X`（macOS 自带的即可）（Hook 依次试 `python`、`python3`、`py -3`，再从 `python3.15` 试到 `python3.9`）；不要把凭据写进 Git URL、脚本或项目文件。
 
 ## 1. Windows 一键安装
 
