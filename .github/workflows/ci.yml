@@ -12,8 +12,7 @@ jobs:
       matrix:
         python: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
     # Every job runs on the self-hosted Linux runner on AJ's machine (no Actions
-    # minutes). Windows and macOS hosted runners are off; their installer tests
-    # skip on Linux, so check those platforms locally before a release.
+    # minutes). Windows and macOS are tested by hand; see CONTRIBUTING.md.
     runs-on: [self-hosted, linux, nextprompt]
     steps:
       - uses: actions/checkout@v4
