@@ -35,6 +35,11 @@
   offered the step in prose instead of a line.
 - Limits: replies summarize fictional work, so a model sometimes asked for content instead
   of inventing it. Desktop rendering and the real clipboard were not exercised.
+- Tests: Windows, Python 3.12: 485 passed, 36 skipped. Linux (WSL), Python 3.14, with the
+  real Codex CLI 0.160.0 and the local simulated model (`NEXTPROMPT_RUN_CLI_INTEGRATION=1`):
+  492 passed, 29 skipped; the integration cases confirm the reminder reaches the root
+  request, a quoted line is copied with no extra request, and a reply without a line makes
+  no extra request. Ruff check and format passed on both.
 
 ## v0.1.10 — 2026-10-04, one-time installation report
 
