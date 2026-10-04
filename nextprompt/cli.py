@@ -93,7 +93,11 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     try:
         manifest = json.loads((root / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         hooks = json.loads((root / "hooks" / "hooks.json").read_text(encoding="utf-8"))
-        valid = manifest["name"] == "nextprompt" and set(hooks["hooks"]) == {"SessionStart", "Stop"}
+        valid = manifest["name"] == "nextprompt" and set(hooks["hooks"]) == {
+            "SessionStart",
+            "UserPromptSubmit",
+            "Stop",
+        }
     except (OSError, ValueError, KeyError):
         valid = False
     interpreter = hook_interpreter()
@@ -105,7 +109,8 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     )
     rows += [
         f"Plugin              {'✓' if valid else '✗'} bundle",
-        f"Hook                {'✓' if valid else '✗'} SessionStart + Stop (review trust in /hooks)",
+        f"Hook                {'✓' if valid else '✗'} SessionStart + UserPromptSubmit + Stop"
+        " (review trust in /hooks)",
         "Re-entry protection ✓ hooks/plugins disabled + NEXTPROMPT_INTERNAL",
     ]
     provider = CodexSuggestionProvider(cfg["model"], store.root)

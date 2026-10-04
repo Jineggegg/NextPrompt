@@ -19,7 +19,7 @@ NextPrompt suggests one short next instruction after each Codex turn. Choose **Y
 - **Auto-copy + notification by default**: each suggestion is copied and announced with a desktop notification, so you know when to paste; Windows, WSL, macOS and common Linux desktops. Display-only mode is available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
-版本 / Version **0.1.8** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
+版本 / Version **0.1.9** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
 
 ## 安装 / Installation
 
@@ -40,7 +40,7 @@ When asked about clipboard copy, **Y or Enter enables auto-copy (default); N kee
 安装结束后 / After installation:
 
 1. 完全退出并重新打开 Codex。 / Quit and reopen Codex.
-2. 打开 `/hooks`，检查并信任 NextPrompt 的 SessionStart 和 Stop Hook。 / Open `/hooks`, review and trust the NextPrompt SessionStart and Stop Hooks.
+2. 打开 `/hooks`，检查并信任 NextPrompt 的 SessionStart、UserPromptSubmit 和 Stop Hook。 / Open `/hooks`, review and trust the NextPrompt SessionStart, UserPromptSubmit and Stop Hooks.
 3. 完成一轮普通对话；生成建议后，粘贴、检查，再发送。 / Complete a normal turn, then paste, review and send the suggestion.
 
 不需要另行运行 setup。想修改偏好时使用 `$nextprompt-setup`。
@@ -66,34 +66,41 @@ Restart Codex and trust the Hook here too. Manual installation also copies and n
 
 ## 显示示例 / What you see
 
-用中文对话并开启自动复制时 / A Chinese conversation with auto-copy enabled:
+默认情况下，Codex 当前模型会在每次回答的最后一行写上建议；中文对话用 `下一步：`，其他语言用 `Next prompt:`。
+回答结束时 Hook 把这一行冒号后面的文字原样复制到剪贴板，所以回答末尾看到的建议和剪贴板里的内容完全一致：
+
+By default, your Codex model ends every reply with the suggestion: `下一步：` in Chinese conversations,
+`Next prompt:` otherwise. When the reply ends, the Hook copies the text after the label to your clipboard exactly
+as written, so the line you see and the clipboard always match:
 
 ```text
-下一句 → 运行完整回归测试，检查最终改动。
+……（回答正文 / the reply）
+下一步：给登出流程加一个回归测试
 ✓ 已复制到剪贴板
 ```
 
-用英文对话、仅展示时 / An English conversation in display-only mode:
+这一行由会话开始时的说明和每轮一句简短提醒（UserPromptSubmit Hook）要求写出，不再另外请求轻量模型，几乎没有等待；
+它是对模型的指令，模型偶尔仍可能漏写。某次回答没有这一行时，NextPrompt 退回到轻量模型生成建议，并在提示里显示出来。
+这一行包含疑似密钥或控制字符时，不复制任何内容，也不会换成另一条建议。
 
-```text
-Next prompt:
-Run the full regression suite and review the final diff.
-```
+A session-start instruction plus a one-line reminder on every turn (UserPromptSubmit Hook) ask for this line, with no
+separate model request and almost no wait. It is an instruction, so the model can still occasionally skip it; then
+NextPrompt falls back to the lightweight model and shows that suggestion in the Hook message. A line that looks
+like a secret or contains control characters is not copied, and no different suggestion is copied in its place.
 
-剪贴板里只有建议正文；复制失败时保留建议供手动复制。想固定界面语言，用 `$nextprompt-setup` 设置 `--language`（如 `zh`、`en`、`ja`）。
+剪贴板里只有建议正文；复制失败时，建议仍在回答末尾，可以手动复制。想固定标签语言，用 `$nextprompt-setup` 设置 `--language`（如 `zh`、`en`）。
 
-Only the suggestion text is copied; if copying fails, the suggestion stays on screen to copy manually. To pin the label language, set `--language` (for example `zh`, `en`, `ja`) with `$nextprompt-setup`.
+Only the suggestion text is copied; if copying fails, it stays at the end of the reply to copy manually. To pin the
+label language, set `--language` (for example `zh`, `en`) with `$nextprompt-setup`.
 
-## 由当前模型直接写建议（可选）/ Let your Codex model write it (optional)
+## 改用独立轻量模型（可选）/ Use a separate lightweight model (optional)
 
-`$nextprompt-setup` 设置 `--source inline` 后，NextPrompt 在会话开始时请 Codex 当前模型在每次回答最后加一行
-`Next prompt: …`，回答结束时 Hook 直接把这一行复制到剪贴板，不再另外请求轻量模型，几乎没有等待，也能看到完整对话。
-这行会出现在回答里，并占用主模型少量输出；某次回答没写这一行时，自动退回到轻量模型生成。默认仍是 `--source model`。
+`$nextprompt-setup` 设置 `--source model` 后，回答里不再加这一行，改为每轮结束后由轻量模型另外生成建议，
+复制到剪贴板并显示在 Hook 提示里（例如 `下一句 → 运行完整回归测试，检查最终改动。`），不占主模型输出，但要等几秒。
 
-With `--source inline`, NextPrompt asks your Codex model at session start to end each reply with a
-`Next prompt: …` line; the Stop Hook copies that line with no separate model request, so there is almost no wait
-and the suggestion sees the whole conversation. The line stays visible in the reply and uses a few output tokens;
-when a reply has no such line, NextPrompt falls back to the lightweight model. The default remains `--source model`.
+With `--source model`, replies no longer carry the line; a lightweight model generates the suggestion after each
+turn, copies it and shows it in the Hook message (for example `Next prompt: Run the full regression suite and
+review the final diff.`). It uses none of your main model's output but takes a few seconds.
 
 ## 常用命令 / Commands
 

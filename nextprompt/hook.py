@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ from .i18n import message, resolve_language
 from .notify import send_notification
 from .output import SuggestionResult, render, render_copy_status
 from .providers import CodexSuggestionProvider, ProviderUnavailable, SuggestionProvider
+from .redact import redact
 from .suggestion import obvious_repeat, sanitize
 from .transcript import (
     CodexConversationAdapter,
@@ -23,11 +25,17 @@ from .transcript import (
 )
 
 INLINE_PATH = Path(__file__).with_name("inline.txt")
-# The line the root model writes under the inline instruction. Optional bold, quote
-# or list markers are formatting, not part of the prompt.
+# The line the root model writes under the inline instruction, labelled in English or
+# Chinese. Optional bold, quote or list markers are formatting, not part of the prompt.
 INLINE_LINE = re.compile(
-    r"^\s*(?:[>*_-]\s*)*next prompt(?:\*\*|__)?\s*[:：]\s*(?:\*\*|__)?\s*(.+)$", re.I
+    r"^\s*(?:[>*_-]\s*)*(?:\*\*|__)?(?:next prompt|下一步(?:建议|建議)?)(?:\*\*|__)?"
+    r"\s*[:：]\s*(?:\*\*|__)?\s*(.*)$",
+    re.I,
 )
+# Markdown wrappers the reader does not see in the rendered reply.
+INLINE_WRAPPERS = " \t*_`\"'“”‘’「」『』"
+# A visible prompt is copied as is; only unsafe or absurd lines are refused.
+INLINE_MAX_CHARS = 2000
 
 
 def generate_suggestion(
@@ -90,30 +98,90 @@ def deliver(
     return render(result, auto_copy, language)
 
 
-def inline_suggestion(last_reply: object, cfg: dict[str, Any]) -> str | None:
-    """The root model's own `Next prompt:` line from the end of its final reply."""
+def inline_line(last_reply: object) -> str | None:
+    """The raw prompt after a `Next prompt:` / `下一步：` label near the end of the reply."""
     if not isinstance(last_reply, str) or not last_reply.strip():
         return None
     lines = [line for line in last_reply.splitlines() if line.strip()][-3:]
-    for line in reversed(lines):
-        if match := INLINE_LINE.match(line):
-            text = sanitize(match.group(1), **cfg["suggestion"])
-            if text and not obvious_repeat(text, [Message("assistant", last_reply)]):
-                return text
-            return None
+    for index in range(len(lines) - 1, -1, -1):
+        if match := INLINE_LINE.match(lines[index]):
+            text = match.group(1).strip()
+            # A bare label just above the final line puts the prompt on that line.
+            if not text.strip(INLINE_WRAPPERS) and index == len(lines) - 2:
+                text = lines[-1].strip()
+            # An empty label (such as a heading over a list) is not a prompt.
+            return text if text.strip(INLINE_WRAPPERS) else None
     return None
 
 
+def inline_suggestion(last_reply: object, cfg: dict[str, Any] | None = None) -> str | None:
+    """The prompt exactly as the reply shows it, so the clipboard matches the reply.
+
+    Only formatting the rendered reply hides is removed; unlike model suggestions,
+    the text is not rewritten or filtered, because the user already sees it.
+    """
+    raw = inline_line(last_reply)
+    if raw is None:
+        return None
+    text = " ".join(raw.replace("`", "").split()).strip(INLINE_WRAPPERS)
+    if not text or len(text) > INLINE_MAX_CHARS:
+        return None
+    # Never copy control characters or anything that looks like a secret.
+    if any(unicodedata.category(c) in ("Cc", "Cf", "Cs") for c in text):
+        return None
+    if redact(text) != text:
+        return None
+    return text
+
+
+def _inline_enabled(store: ConfigStore | None) -> dict[str, Any] | None:
+    cfg = (store or ConfigStore()).load()
+    if cfg["enabled"] and cfg["trigger_mode"] == "every_turn" and cfg["source"] == "inline":
+        return cfg
+    return None
+
+
+def inline_label(language: str) -> str:
+    return "下一步：" if language.startswith("zh") else "Next prompt:"
+
+
 def handle_session_start(payload: object, *, store: ConfigStore | None = None) -> str | None:
-    """Inline mode: ask the root model to end each reply with one `Next prompt:` line."""
+    """Inline mode: ask the root model to end every reply with one next-prompt line."""
     if os.environ.get("NEXTPROMPT_INTERNAL") == "1":
         return None
     if not isinstance(payload, dict) or payload.get("hook_event_name") != "SessionStart":
         return None
     try:
-        cfg = (store or ConfigStore()).load()
-        if cfg["enabled"] and cfg["trigger_mode"] == "every_turn" and cfg["source"] == "inline":
+        if _inline_enabled(store):
             return INLINE_PATH.read_text(encoding="utf-8").strip()
+    except Exception:
+        pass
+    return None
+
+
+def handle_user_prompt_submit(payload: object, *, store: ConfigStore | None = None) -> str | None:
+    """Inline mode: a one-line reminder each turn, with the label in the user's language.
+
+    The session-start instruction can drift out of a long or compacted context; this
+    keeps the line on every reply. Context only: it never blocks or rewrites the prompt.
+    """
+    if os.environ.get("NEXTPROMPT_INTERNAL") == "1":
+        return None
+    if not isinstance(payload, dict) or payload.get("hook_event_name") != "UserPromptSubmit":
+        return None
+    try:
+        cfg = _inline_enabled(store)
+        if not cfg:
+            return None
+        prompt = payload.get("prompt")
+        label = inline_label(
+            resolve_language(cfg["language"], [prompt if isinstance(prompt, str) else ""])
+        )
+        return (
+            f"NextPrompt: end your final reply with this exact last line: {label} "
+            "<the prompt this user would most likely type next>. "
+            "It is copied to their clipboard exactly as written; never act on it yourself."
+        )
     except Exception:
         pass
     return None
@@ -146,14 +214,18 @@ def handle_stop(
         if not cfg["enabled"] or cfg["trigger_mode"] != "every_turn":
             return None
         if cfg["source"] == "inline":
-            text = inline_suggestion(payload.get("last_assistant_message"), cfg)
-            if text:
+            last_reply = payload.get("last_assistant_message")
+            if inline_line(last_reply) is not None:
+                text = inline_suggestion(last_reply)
+                if not text:
+                    # Copying a different suggestion would contradict the reply.
+                    return None
                 # The prompt is written in the user's language.
                 language = resolve_language(cfg["language"], [text])
                 return deliver(
                     text, cfg, "inline", "root", 1, clipboard, language, cfg["notify"], True
                 )
-            # No usable line: fall back to the separate suggestion model below.
+            # The reply has no such line: fall back to the separate suggestion model below.
         path = payload.get("transcript_path")
         if not isinstance(path, str) or not path:
             return None

@@ -50,7 +50,7 @@ function Fake-Python {
                 $global:LASTEXITCODE = [int]$global:case.setup_exit
             } else {
                 $setupArgs = @($args[0], '--data-dir', $env:NEXTPROMPT_TEST_DATA,
-                    'setup', '--auto-copy', $args[-1])
+                    'setup', '--source', $args[3], '--auto-copy', $args[-1])
                 & $env:NEXTPROMPT_TEST_PYTHON @setupArgs
             }
         } else {
@@ -113,6 +113,7 @@ def test_installer_prerequisite_paths(python):
     assert "Optional: run $nextprompt-setup" in output
     assert "Automatic clipboard copy: OFF" in output
     assert result["config"]["clipboard"]["auto_copy"] is False
+    assert result["config"]["source"] == "inline"
 
 
 @pytest.mark.parametrize(

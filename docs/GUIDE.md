@@ -2,7 +2,7 @@
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 NextPrompt is the product, repository, package, plugin and marketplace name.
-Version: **0.1.8**. Runtime: Python 3.9+, standard library only.
+Version: **0.1.9**. Runtime: Python 3.9+, standard library only.
 
 **下一句，已经准备好了。** 每轮完成后，NextPrompt 为你准备一句简短的下一步提示词。
 安装时选择 **Y**，有效建议就会**自动复制到剪贴板**：按 **Ctrl+V**（macOS：**Cmd+V**），
@@ -164,16 +164,18 @@ If you enter **Y** or press Enter, the completion guide includes:
 NextPrompt installed successfully.
 Automatic clipboard copy: ON. New suggestions will be copied automatically.
 A desktop notification shows each suggestion when it is ready to paste.
+Suggestion source: your Codex model ends each reply with a 'Next prompt:' line
+(labelled in Chinese for Chinese conversations), and exactly that line is copied.
+Pass -Source model for a separate lightweight request instead.
 Your clipboard choice has been saved. Other existing settings are preserved.
 No additional setup is required.
 
 Finish in Codex:
 1. Fully quit and reopen Codex to load the plugin and refreshed PATH.
-2. Open /hooks, review the NextPrompt Stop hook, and approve/trust it.
+2. Open /hooks, review each NextPrompt hook (SessionStart, UserPromptSubmit, Stop), and approve/trust it.
    Installation does not grant hook trust or bypass your approval.
-3. Complete a normal conversation turn. A useful suggestion appears as:
-   Next prompt:
-   Run the full regression suite and review the final diff.
+3. Complete a normal conversation turn. The reply ends with a line such as:
+   Next prompt: Run the full regression suite and review the final diff.
    (Example only; suggestions depend on the conversation.)
 
 Optional: run $nextprompt-setup to change clipboard copy or other settings.
@@ -327,6 +329,23 @@ other Stop hooks. If another plugin requests continuation, this hook cannot obse
 that future decision. NextPrompt never requests continuation and skips subsequent
 `stop_hook_active` runs; strict once-after-final-completion behavior is verified for
 ordinary turns without a continuing Stop hook from another plugin.
+
+### Inline source (default)
+
+With `source: "inline"` (the default since 0.1.9), the SessionStart Hook adds a short
+instruction asking the Codex model to end every final reply with one line,
+`下一步：<prompt>` when the user's latest message is Chinese and `Next prompt: <prompt>`
+otherwise. The UserPromptSubmit Hook repeats a one-line reminder with the right label
+as `additionalContext` on every turn, so long or compacted sessions keep the line; it
+never sets `decision`, `reason` or `continue`. The Stop Hook reads the line from
+`last_assistant_message` and copies the text after the label exactly as the reply
+shows it, removing only Markdown wrappers (bold, quotes, backticks). It does not apply
+the word limit or generic/repeat filters used for model suggestions, because a
+different clipboard text would contradict the visible reply. A line that looks like a
+secret or contains control characters copies nothing. Only a reply without the line
+falls back to the separate lightweight request. The instruction is guidance to the
+model, so an occasional reply can still omit the line. `setup --source model` turns
+inline mode off.
 
 The deadline includes capability checks, model discovery and inference; process
 groups are terminated on timeout. Codex may perform transport retries within that

@@ -1,11 +1,22 @@
 # Changelog
 
-## Unreleased
+## 0.1.9 — 2026-10-04
 
-- Optional inline mode (`setup --source inline`): a SessionStart Hook asks the Codex model
-  to end each reply with a `Next prompt:` line, and the Stop Hook copies that line without
-  a separate model request. Replies without a usable line fall back to the lightweight
-  model. The default stays `--source model`.
+- Inline mode is now the default: the Codex model ends every reply with a
+  `Next prompt:` line (`下一步：` in Chinese conversations), and the Stop Hook copies
+  that line to the clipboard without a separate model request. `setup --source model`
+  restores the separate lightweight request. The Windows installer applies the new
+  default on upgrade; pass `-Source model` to keep the separate request.
+- The copied text is exactly what the reply shows: only Markdown wrappers are removed,
+  and the line is no longer rewritten, shortened or dropped by the model-suggestion
+  filters. A line that looks like a secret or contains control characters copies
+  nothing instead of a different suggestion; a reply without the line still falls back
+  to the lightweight model.
+- New UserPromptSubmit Hook: in inline mode, a one-line reminder on every turn names
+  the label in the user's language, so long or compacted sessions keep ending replies
+  with the line. It only adds context and never blocks or rewrites the prompt.
+  Review and trust it in `/hooks` after upgrading.
+- Accept `下一步：`, `下一步建议：`, bold labels and a prompt on the line after a bare label.
 
 ## 0.1.8 — 2026-10-04
 

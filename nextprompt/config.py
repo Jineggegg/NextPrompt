@@ -25,8 +25,9 @@ DEFAULTS: dict[str, Any] = {
     "enabled": True,
     "trigger_mode": "every_turn",
     "language": "auto",
-    # "model": a separate lightweight request; "inline": the root model writes it.
-    "source": "model",
+    # "inline": the root model ends its reply with the prompt, which is copied verbatim;
+    # "model": a separate lightweight request.
+    "source": "inline",
     "clipboard": {"auto_copy": True, "osc52_fallback": False},
     "notify": True,
     "context": {"last_messages": 5, "max_chars_per_message": 2500, "max_total_chars": 8000},

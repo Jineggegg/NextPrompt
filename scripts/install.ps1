@@ -2,7 +2,10 @@
 param(
     [switch]$Probe,
     [ValidateSet("on", "off")]
-    [string]$AutoCopy
+    [string]$AutoCopy,
+    # inline: your Codex model ends each reply with the prompt; model: a separate request.
+    [ValidateSet("inline", "model")]
+    [string]$Source = "inline"
 )
 
 Set-StrictMode -Version Latest
@@ -137,7 +140,7 @@ if ([string]::IsNullOrWhiteSpace($AutoCopy)) {
     }
 }
 
-& $python.Command (Join-Path $repoRoot "scripts\nextprompt.py") setup --auto-copy $AutoCopy
+& $python.Command (Join-Path $repoRoot "scripts\nextprompt.py") setup --source $Source --auto-copy $AutoCopy
 if ($LASTEXITCODE -ne 0) {
     throw "Could not save the NextPrompt clipboard preference."
 }
@@ -151,16 +154,23 @@ if ($AutoCopy -eq "on") {
 else {
     Write-Host "Automatic clipboard copy: OFF. Suggestions will be displayed only."
 }
+if ($Source -eq "inline") {
+    Write-Host "Suggestion source: your Codex model ends each reply with a 'Next prompt:' line"
+    Write-Host "(labelled in Chinese for Chinese conversations), and exactly that line is copied."
+    Write-Host "Pass -Source model for a separate lightweight request instead."
+}
+else {
+    Write-Host "Suggestion source: a separate lightweight model request after each turn."
+}
 Write-Host "Your clipboard choice has been saved. Other existing settings are preserved."
 Write-Host "No additional setup is required."
 Write-Host ""
 Write-Host "Finish in Codex:"
 Write-Host "1. Fully quit and reopen Codex to load the plugin and refreshed PATH."
-Write-Host "2. Open /hooks, review the NextPrompt Stop hook, and approve/trust it."
+Write-Host "2. Open /hooks, review each NextPrompt hook (SessionStart, UserPromptSubmit, Stop), and approve/trust it."
 Write-Host "   Installation does not grant hook trust or bypass your approval."
-Write-Host "3. Complete a normal conversation turn. A useful suggestion appears as:"
-Write-Host "   Next prompt:"
-Write-Host "   Run the full regression suite and review the final diff."
+Write-Host "3. Complete a normal conversation turn. The reply ends with a line such as:"
+Write-Host "   Next prompt: Run the full regression suite and review the final diff."
 Write-Host "   (Example only; suggestions depend on the conversation.)"
 Write-Host ""
 Write-Host "Optional: run `$nextprompt-setup to change clipboard copy or other settings."
