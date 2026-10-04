@@ -1,5 +1,7 @@
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import Mock
 
 import pytest
 
@@ -76,3 +78,29 @@ def test_malformed_file(tmp_path, content):
     (tmp_path / "config.json").write_text(content)
     with pytest.raises(ConfigError):
         ConfigStore(tmp_path).load()
+
+
+def test_lock_retries_windows_delete_pending(configured, monkeypatch):
+    """Windows briefly denies access to a lock file another thread is deleting."""
+    real_open = os.open
+    calls = []
+
+    def flaky_open(path, flags, mode=0o777):
+        if str(path).endswith(".config.lock") and not calls:
+            calls.append(path)
+            raise PermissionError(13, "Permission denied")
+        return real_open(path, flags, mode)
+
+    monkeypatch.setattr("nextprompt.config.os.open", flaky_open)
+    monkeypatch.setattr("nextprompt.config.LOCK_RETRY_ERRORS", (FileExistsError, PermissionError))
+    assert configured.update(lambda cfg: cfg.update(enabled=False))["enabled"] is False
+    assert calls
+
+
+def test_permission_error_is_not_retried_off_windows(configured, monkeypatch):
+    monkeypatch.setattr("nextprompt.config.LOCK_RETRY_ERRORS", (FileExistsError,))
+    monkeypatch.setattr(
+        "nextprompt.config.os.open", Mock(side_effect=PermissionError(13, "Permission denied"))
+    )
+    with pytest.raises(PermissionError):
+        configured.update(lambda cfg: cfg.update(enabled=False))

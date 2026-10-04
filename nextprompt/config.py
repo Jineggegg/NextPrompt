@@ -15,6 +15,11 @@ from typing import Any
 from .i18n import LANGUAGES
 from .redact import redact
 
+# Windows reports a lock file that is still being deleted as "access denied".
+LOCK_RETRY_ERRORS: tuple[type[OSError], ...] = (
+    (FileExistsError, PermissionError) if os.name == "nt" else (FileExistsError,)
+)
+
 DEFAULTS: dict[str, Any] = {
     "version": 1,
     "enabled": True,
@@ -122,7 +127,7 @@ class ConfigStore:
                 fd = os.open(lock, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
                 os.close(fd)
                 break
-            except FileExistsError:
+            except LOCK_RETRY_ERRORS:
                 if time.monotonic() >= deadline:
                     raise ConfigError(
                         "config busy; remove a stale .config.lock if necessary"
