@@ -146,7 +146,8 @@ def test_install_saves_choice_and_prints_usage(auto_copy):
     assert ("Automatic clipboard copy: OFF" in output) is (auto_copy == "off")
     assert "Fully quit and reopen Codex" in output
     assert "UserPromptSubmit and Stop hooks, and trust them" in output
-    assert "Next prompt:" in output
+    assert "→ 要不要「接着写第三章」？" in output
+    assert "The quoted prompt is copied to the clipboard." in output
     assert "never sent automatically" in output
     assert "$nextprompt-setup" in output
 
