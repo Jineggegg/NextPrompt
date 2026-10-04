@@ -1,7 +1,7 @@
 # 本地安装与验证
 
-GitHub 交付目标是 `Jineggegg/NextPrompt` 私有仓库。仓库创建并推送完成后，
-使用仓库所有者的 GitHub 账号克隆。运行环境需要 Codex CLI 0.159.0+，
+源码位于 GitHub 仓库 `Jineggegg/NextPrompt`，使用 Git 克隆即可。
+运行环境需要 Codex CLI 0.159.0+，
 并且 `codex exec --help` 必须具有
 `--ignore-user-config`、`--ignore-rules`、`--ephemeral`、`--disable`。运行时需要
 PATH 中有 Python 3.10+ 的 `python` 或 `python3`（Hook 会先试 `python`，再回退到 `python3`）；不要把凭据写进 Git URL、脚本或项目文件。
@@ -9,8 +9,7 @@ PATH 中有 Python 3.10+ 的 `python` 或 `python3`（Hook 会先试 `python`，
 ## 1. Windows 一键安装
 
 ```powershell
-gh auth login
-gh repo clone Jineggegg/NextPrompt
+git clone https://github.com/Jineggegg/NextPrompt.git
 Set-Location NextPrompt
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
@@ -25,8 +24,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ## 2. 手动安装并验证真实模型
 
 ```sh
-gh auth login
-gh repo clone Jineggegg/NextPrompt
+git clone https://github.com/Jineggegg/NextPrompt.git
 cd NextPrompt
 codex --version
 python --version

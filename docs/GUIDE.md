@@ -79,16 +79,14 @@ Hook never install software. On Windows, the explicitly invoked PowerShell insta
 checks the requirement and, only when Python is missing or too old, uses `winget` to
 install Python 3.12 for the current user. It does not request administrator access.
 
-For a private checkout at **Jineggegg/NextPrompt**, authenticate as its owner
-before cloning. The commands below require that the private repository has been
-created and populated. The plugin bundles all six skills; no package publication
-or pip installation is needed.
+Clone **Jineggegg/NextPrompt** with Git. The plugin bundles all six skills; no
+package publication or pip installation is needed. Commands in this guide use
+`python`; on macOS/Linux use `python3` if `python` is unavailable.
 
 Windows quick install:
 
 ```powershell
-gh auth login
-gh repo clone Jineggegg/NextPrompt
+git clone https://github.com/Jineggegg/NextPrompt.git
 Set-Location NextPrompt
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
@@ -108,8 +106,7 @@ installer or requesting elevation.
 Manual or non-Windows install:
 
 ```sh
-gh auth login
-gh repo clone Jineggegg/NextPrompt
+git clone https://github.com/Jineggegg/NextPrompt.git
 cd NextPrompt
 python scripts/doctor.py --probe
 codex plugin marketplace add .
@@ -134,11 +131,8 @@ is needed to use the plugin. Restart Codex, then open **`/hooks` and review/trus
 NextPrompt hook**. Installing a plugin does not automatically trust its executable
 hooks. Do not bypass trust review for normal use.
 
-For private repository access, cloning first and registering the local path avoids
-relying on how Codex forwards GitHub authentication to remote marketplace fetches.
 See [local test checklist](LOCAL_TEST.md) for a Chinese quick start and clipboard
-checks. Source delivery is intended to remain private until the owner chooses to
-make it public.
+checks.
 
 ## After installation: no setup required for suggestions
 

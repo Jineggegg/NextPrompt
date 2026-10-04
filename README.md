@@ -24,17 +24,15 @@ NextPrompt suggests one short next instruction after each Codex turn. Choose **Y
 Windows：
 
 ```powershell
-gh repo clone Jineggegg/NextPrompt
+git clone https://github.com/Jineggegg/NextPrompt.git
 Set-Location NextPrompt
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-目前仓库为私有，需要有仓库访问权限并登录 GitHub。公开后任何人都可以下载。
-需提前安装并登录 Codex CLI；Python 缺失或版本过旧时，Windows 安装脚本通过 `winget` 自动安装。
+需提前安装 Git，并安装、登录 Codex CLI；Python 缺失或版本过旧时，Windows 安装脚本通过 `winget` 自动安装。
 安装时询问是否自动复制到剪贴板：**Y 开启，N 或直接回车仅展示**，结束报告会确认所选模式。
 
-The repository is currently private: GitHub login and repository access are required. Once public, anyone can download it.
-Install and sign in to Codex CLI first. On Windows, the installer uses `winget` to install Python if it is missing or too old.
+Install Git, then install and sign in to Codex CLI first. On Windows, the installer uses `winget` to install Python if it is missing or too old.
 When asked about clipboard copy, **Y enables auto-copy; N or Enter keeps display-only mode**. The final report confirms your choice.
 
 安装结束后 / After installation:
@@ -54,7 +52,7 @@ macOS / Linux 或手动安装（需已有 Python 3.10+ 的 `python` 或 `python3
 macOS / Linux or manual installation (Python 3.10+ as `python` or `python3`, plus Codex):
 
 ```sh
-gh repo clone Jineggegg/NextPrompt
+git clone https://github.com/Jineggegg/NextPrompt.git
 cd NextPrompt
 codex plugin marketplace add .
 codex plugin add nextprompt@nextprompt

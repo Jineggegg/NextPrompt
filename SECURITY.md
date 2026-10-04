@@ -50,10 +50,9 @@ execution-policy override is process-scoped and does not modify system policy.
 ## Reporting a vulnerability
 
 Do not open a public issue containing credentials, private conversations, unredacted
-rollouts or account files. Once this repository is hosted on GitHub, use its private
-vulnerability reporting feature if enabled; otherwise contact its listed maintainer
-privately before sharing sensitive details. No reporting address or GitHub account
-is fabricated in this unpublished checkout. Include version, platform, a sanitized
+rollouts or account files. Report privately through GitHub's private vulnerability
+reporting for [Jineggegg/NextPrompt](https://github.com/Jineggegg/NextPrompt/security)
+(Security → Report a vulnerability). Include version, platform, a sanitized
 description and a minimal synthetic reproduction.
 
 Only v0.1.x is currently maintained. Fixes should include regression tests and a
