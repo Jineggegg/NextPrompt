@@ -46,10 +46,10 @@ Python is installed automatically when missing. Trusting the hooks stays your ow
 
 ### Install from a terminal
 
-Install Git, then install and sign in to Codex CLI first. A terminal outside the Codex app does
-not see the app's own `codex` command; if you only have the app, use the prompt above.
+Install Git, then install and sign in to Codex (the app or Codex CLI) first. The Windows
+installer also finds the Codex app's own `codex.exe` when no `codex` command is on PATH.
 
-Windows:
+Windows (in **PowerShell**, not Command Prompt):
 
 ```powershell
 git clone https://github.com/Jineggegg/codex-next-prompt.git

@@ -33,6 +33,20 @@ class ProviderUnavailable(RuntimeError):
     """Safe category-only error. Never attach raw subprocess output."""
 
 
+def codex_app_executable() -> str | None:
+    """The newest codex.exe the Windows Codex app unpacks; it is not on PATH outside the app."""
+    root = os.environ.get("LOCALAPPDATA")
+    if os.name != "nt" or not root:
+        return None
+    found = []
+    for path in Path(root, "OpenAI", "Codex", "bin").glob("*/codex.exe"):
+        try:
+            found.append((path.stat().st_mtime, str(path)))
+        except OSError:
+            continue
+    return max(found)[1] if found else None
+
+
 def failure_category(stderr: bytes) -> str:
     """Best-effort CLI diagnostics; return only a fixed, safe category."""
     text = stderr.decode("utf-8", "replace").casefold()
@@ -202,7 +216,7 @@ class CodexSuggestionProvider(SuggestionProvider):
 
     @staticmethod
     def executable() -> str:
-        executable = shutil.which("codex")
+        executable = shutil.which("codex") or codex_app_executable()
         if not executable:
             raise ProviderUnavailable("model")
         return executable

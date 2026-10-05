@@ -8,8 +8,11 @@
   manager and `%LOCALAPPDATA%\Programs\Python\Python3X\python.exe`. Doctor checks the same
   locations.
 - README: an install prompt to paste into Codex, so the Codex app installs the plugin with a
-  single approval, without a separate Codex CLI. The installers' "codex not found" error
-  points Codex app users to it.
+  single approval, without a separate Codex CLI.
+- Windows: the installer and Doctor use the Codex app's own `codex.exe`
+  (`%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`, newest first) when no `codex` command is on
+  PATH, so `install.ps1` works from a normal PowerShell or Command Prompt with only the app
+  installed instead of stopping with "Codex CLI is required".
 
 ## 0.2.0 — 2026-10-05
 
