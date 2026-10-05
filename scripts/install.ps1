@@ -143,7 +143,7 @@ if ($null -eq $python) {
 
 $codex = Get-Command codex -ErrorAction SilentlyContinue
 if ($null -eq $codex) {
-    throw "Codex CLI is required. Install or repair Codex, then rerun this script."
+    throw "The codex command was not found. Codex app users: paste the install prompt from the README into Codex instead (the app's own shell has codex). Otherwise install Codex CLI, then rerun this script."
 }
 
 $pythonArgs = @($python.Arguments)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -28,7 +29,34 @@ HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "Stop")
 # hosts whose default python3 is older than 3.9 (Ubuntu 20.04, RHEL 8, openSUSE Leap 15)
 # but have a newer Python installed alongside it.
 VERSIONED_PYTHONS = tuple(f"python3.{minor}" for minor in range(15, 8, -1))
-HOOK_INTERPRETERS = (("python",), ("python3",), ("py", "-3"), *((n,) for n in VERSIONED_PYTHONS))
+# Codex runs Windows hooks with `cmd /C` and the PATH it started with. A Python installed
+# after Codex started, or one installed without "Add to PATH", is still found at its
+# per-user default location. On macOS / Linux these fail as "not found", like any other
+# missing candidate.
+WINDOWS_PYTHONS = (
+    (r'"%LOCALAPPDATA%\Programs\Python\Launcher\py.exe"', "-3"),
+    (r'"%LOCALAPPDATA%\Python\bin\python.exe"',),
+    *(
+        (rf'"%LOCALAPPDATA%\Programs\Python\Python3{minor}\python.exe"',)
+        for minor in range(15, 8, -1)
+    ),
+)
+HOOK_INTERPRETERS = (
+    ("python",),
+    ("python3",),
+    ("py", "-3"),
+    *((n,) for n in VERSIONED_PYTHONS),
+    *WINDOWS_PYTHONS,
+)
+
+
+def _resolve_interpreter(name: str) -> str | None:
+    if name.startswith('"'):
+        if os.name != "nt":
+            return None
+        path = os.path.expandvars(name.strip('"'))
+        return path if "%" not in path and os.path.isfile(path) else None
+    return shutil.which(name)
 
 
 def status(cfg: dict[str, Any], root: Path | None = None) -> str:
@@ -68,7 +96,7 @@ def status(cfg: dict[str, Any], root: Path | None = None) -> str:
 def hook_interpreter() -> tuple[str, str] | None:
     """The interpreter the hook command will use: the first of HOOK_INTERPRETERS with 3.9+."""
     for name, *flags in HOOK_INTERPRETERS:
-        executable = shutil.which(name)
+        executable = _resolve_interpreter(name)
         if not executable:
             continue
         try:
@@ -116,7 +144,7 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
     rows.append(
         f"Hook Python         ✓ {interpreter[0]} {interpreter[1]}"
         if interpreter
-        else "Hook Python         ✗ no python, python3, py -3 or python3.X with 3.9+ on PATH"
+        else "Hook Python         ✗ no Python 3.9+ on PATH or in the default Windows folders"
         " (hook would fail)"
     )
     rows += [

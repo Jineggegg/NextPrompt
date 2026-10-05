@@ -2,7 +2,7 @@
 
 Your next prompt, ready to paste.
 
-Codex Next Prompt is a plugin for the OpenAI Codex CLI that automatically generates your next prompt
+Codex Next Prompt is a plugin for OpenAI Codex (the Codex app and Codex CLI) that automatically generates your next prompt
 from the conversation context and copies it directly to your clipboard. When a next step is worth it,
 Codex ends its reply with one natural sentence that quotes your likely next prompt
 (`→ Want me to “add a regression test for logout”?`), and the quoted prompt is copied, so you can
@@ -20,7 +20,34 @@ Version **0.2.0** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
 
 ## Installation
 
-Install Git, then install and sign in to Codex CLI first.
+The Codex app and Codex CLI share the same `~/.codex`, so a plugin installed either way works
+in both.
+
+### Install with Codex (easiest, works in the Codex app)
+
+Paste this into a Codex chat. Codex runs the installer as one command, so you approve it once
+(it needs network access and writes to `~/.codex`, outside the workspace):
+
+````text
+Install the Codex Next Prompt plugin from https://github.com/Jineggegg/codex-next-prompt.
+Run exactly one of these as a single command, requesting approval once (it needs network access and writes outside the workspace). Do not split it, edit it or work around errors.
+
+Windows (PowerShell):
+$d = Join-Path $HOME 'codex-next-prompt'; if (Test-Path $d) { git -C $d pull --ff-only } else { git clone https://github.com/Jineggegg/codex-next-prompt.git $d }; if ($?) { powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $d 'scripts\install.ps1') -AutoCopy on -Notify on }
+
+macOS / Linux:
+d="$HOME/codex-next-prompt"; if [ -d "$d" ]; then git -C "$d" pull --ff-only; else git clone https://github.com/Jineggegg/codex-next-prompt.git "$d"; fi && sh "$d/scripts/install.sh" --auto-copy on --notify on
+
+If git is missing, tell me to install Git and stop. If the command fails, show me its last lines and stop.
+When it succeeds, tell me the two remaining steps: fully quit and reopen Codex, then open /hooks and trust the NextPrompt SessionStart, UserPromptSubmit and Stop hooks.
+````
+
+Python is installed automatically when missing. Trusting the hooks stays your own step.
+
+### Install from a terminal
+
+Install Git, then install and sign in to Codex CLI first. A terminal outside the Codex app does
+not see the app's own `codex` command; if you only have the app, use the prompt above.
 
 Windows:
 
