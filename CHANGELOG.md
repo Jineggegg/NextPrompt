@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-10-05
 
 - Renamed to **Codex Next Prompt**; the repository is now `Jineggegg/codex-next-prompt`
   (old URLs redirect). Commands, the `nextprompt` package and the plugin id are unchanged.
