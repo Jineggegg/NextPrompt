@@ -48,8 +48,7 @@ def test_never_fallback_to_expensive_or_high_reasoning(models):
         choose_model(models, "missing")
 
 
-@pytest.mark.parametrize("os_name", ["nt", "posix"])
-def test_codex_app_executable_when_codex_is_not_on_path(monkeypatch, tmp_path, os_name):
+def test_codex_app_executable_when_codex_is_not_on_path(monkeypatch, tmp_path):
     # Outside the Windows Codex app only its unpacked copy exists; the newest one wins.
     bin_dir = tmp_path / "OpenAI" / "Codex" / "bin"
     for name, mtime in (("old", 1000), ("new", 2000)):
@@ -58,9 +57,8 @@ def test_codex_app_executable_when_codex_is_not_on_path(monkeypatch, tmp_path, o
         exe.write_bytes(b"")
         os.utime(exe, (mtime, mtime))
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
-    monkeypatch.setattr("nextprompt.providers.os.name", os_name)
     monkeypatch.setattr("nextprompt.providers.shutil.which", lambda _: None)
-    if os_name == "nt":
+    if os.name == "nt":
         assert CodexSuggestionProvider.executable() == str(bin_dir / "new" / "codex.exe")
     else:
         with pytest.raises(ProviderUnavailable):

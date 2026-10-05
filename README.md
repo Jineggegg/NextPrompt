@@ -16,7 +16,7 @@ paste with **Ctrl+V** (**Cmd+V** on macOS) and keep going.
 - **Auto-copy + notification by default**: each suggestion is copied and announced with a desktop notification, so you know when to paste; Windows, WSL, macOS and common Linux desktops. Display-only mode is available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
-Version **0.2.0** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
+Version **0.2.1** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
 
 ## Installation
 

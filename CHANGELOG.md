@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 — 2026-10-05
 
 - Windows: hooks no longer fail when Python is off the PATH Codex started with (for example
   Python installed after Codex was opened, or installed without "Add to PATH"). After the
