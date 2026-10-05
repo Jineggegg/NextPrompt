@@ -4,7 +4,7 @@ Use Python 3.9+ and a feature branch. Runtime dependencies must remain standard
 library only unless a concrete portability or security need justifies an addition.
 
 ```sh
-python -m pip install -e '.[dev]'
+python -m pip install -e '[dev]'
 python -m ruff check .
 python -m ruff format --check .
 python -m pytest -q
@@ -12,25 +12,20 @@ python -m pytest -q
 
 ## Testing on each platform / 各平台怎么测
 
-CI runs Linux only, on AJ's self-hosted runner (Python 3.9 to 3.14), because
-GitHub-hosted runners stop when the account's Actions minutes run out. Until hosted
-minutes are available again, every PR is tested on all three platforms like this:
+GitHub Actions runs the Linux test suite on GitHub-hosted `ubuntu-latest`
+runners for Python 3.9 through 3.14. The workflow runs on pushes and pull
+requests. Windows and macOS are not covered by this workflow; contributors
+should run the commands above on those platforms when available.
 
-- **Linux**: CI on AJ's self-hosted runner, automatic on every push.
-- **Windows**: run the commands above locally on Songoat's Windows laptop (a fresh clone
-  of the PR branch in a temporary folder). This is the only place
-  `tests/test_windows_install.py` runs; check it is not skipped.
-- **macOS**: Claude runs the same commands on Songoat's Mac, reached over Tailscale from
-  the Windows laptop (SSH), again in a fresh clone in a temporary folder. Check that
-  `tests/test_unix_install.py` runs and is not skipped.
+GitHub Actions 会在 GitHub 托管的 `ubuntu-latest` runner 上，对 Python 3.9 至
+3.14 自动运行 Linux 测试。工作流会在推送和 Pull Request 时运行。此工作流不覆盖
+Windows 和 macOS；条件允许时，请在这两个平台上运行上述命令。
 
-Record the Windows and macOS results (OS, Python version, commit, pass/fail counts) in a
-PR comment before merging.
+Before merging, record any additional Windows and macOS results (OS, Python
+version, commit, pass/fail counts) in the pull request.
 
-在 GitHub 没有 Actions 额度时，按以下方式测试：Linux 由 AJ 的自建服务器自动跑 CI；
-Windows 在 Songoat 的 Windows 笔记本上本地跑；macOS 由 Claude 通过 Tailscale（从 Windows
-笔记本 SSH）连到 Songoat 的 Mac 上跑。Windows 和 macOS 都用临时文件夹里的全新克隆。
-合并前把 Windows 和 macOS 的结果（系统、Python 版本、提交、通过/失败数量）写在 PR 评论里。
+合并前，请在 Pull Request 中记录额外的 Windows 和 macOS 测试结果（系统、Python
+版本、提交、通过/失败数量）。
 
 Run the opt-in real CLI suite on POSIX with Codex installed:
 
