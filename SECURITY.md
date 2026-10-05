@@ -41,12 +41,15 @@ inference, clipboard or state-write effects after its config read.
 ## Windows installer
 
 The optional `scripts/install.ps1` runs only when the user invokes it. If Python
-3.10+ is unavailable, it uses the official `winget` source to install Python 3.12
-for the current user with no elevation, then refreshes the process PATH and verifies
-the interpreter. The Hook and normal skill execution never download or install
-software. If `winget` is unavailable or installation cannot be verified, the script
-stops rather than falling back to an unverified download. The documented PowerShell
-execution-policy override is process-scoped and does not modify system policy.
+3.9+ is unavailable, it uses the official `winget` source to install Python 3.12
+for the current user with no elevation. If `winget` is unavailable, it downloads the
+official Python 3.12 installer from python.org and runs it for the current user only
+when its Authenticode signature is valid and issued to the Python Software
+Foundation; otherwise the file is deleted without being run and the script stops.
+After either install it refreshes the process PATH and verifies the interpreter, and
+stops if no Python 3.9+ is found. The Hook and normal skill execution never download
+or install software. The documented PowerShell execution-policy override is
+process-scoped and does not modify system policy.
 
 ## Reporting a vulnerability
 
