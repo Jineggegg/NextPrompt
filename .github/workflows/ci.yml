@@ -11,9 +11,9 @@ jobs:
       fail-fast: false
       matrix:
         python: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
-    # Every job runs on the self-hosted Linux runner on AJ's machine (no Actions
-    # minutes). Windows and macOS are tested by hand; see CONTRIBUTING.md.
-    runs-on: [self-hosted, linux, nextprompt]
+    # GitHub-hosted runner: in a public repo, fork PRs must never run on a
+    # self-hosted machine. Windows and macOS are tested by hand; see CONTRIBUTING.md.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7

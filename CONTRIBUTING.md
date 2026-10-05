@@ -12,11 +12,10 @@ python -m pytest -q
 
 ## Testing on each platform / 各平台怎么测
 
-CI runs Linux only, on AJ's self-hosted runner (Python 3.9 to 3.14), because
-GitHub-hosted runners stop when the account's Actions minutes run out. Until hosted
-minutes are available again, every PR is tested on all three platforms like this:
+CI runs Linux only, on a GitHub-hosted `ubuntu-latest` runner (Python 3.9 to 3.14).
+Windows and macOS are not in CI yet, so every PR is tested on all three platforms like this:
 
-- **Linux**: CI on AJ's self-hosted runner, automatic on every push.
+- **Linux**: CI on GitHub-hosted `ubuntu-latest`, automatic on every push and PR.
 - **Windows**: run the commands above locally on Songoat's Windows laptop (a fresh clone
   of the PR branch in a temporary folder). This is the only place
   `tests/test_windows_install.py` runs; check it is not skipped.
@@ -27,7 +26,7 @@ minutes are available again, every PR is tested on all three platforms like this
 Record the Windows and macOS results (OS, Python version, commit, pass/fail counts) in a
 PR comment before merging.
 
-在 GitHub 没有 Actions 额度时，按以下方式测试：Linux 由 AJ 的自建服务器自动跑 CI；
+按以下方式测试：Linux 由 GitHub 托管的 `ubuntu-latest` 自动跑 CI；
 Windows 在 Songoat 的 Windows 笔记本上本地跑；macOS 由 Claude 通过 Tailscale（从 Windows
 笔记本 SSH）连到 Songoat 的 Mac 上跑。Windows 和 macOS 都用临时文件夹里的全新克隆。
 合并前把 Windows 和 macOS 的结果（系统、Python 版本、提交、通过/失败数量）写在 PR 评论里。
