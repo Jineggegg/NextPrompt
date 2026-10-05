@@ -1,20 +1,9 @@
-# NextPrompt — complete guide
+# Codex Next Prompt — complete guide
 
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
-NextPrompt is the product, repository, package, plugin and marketplace name.
+It is published as **Codex Next Prompt** (repository `Jineggegg/codex-next-prompt`);
+`nextprompt` is the package, plugin and marketplace name.
 Version: **0.1.13**. Runtime: Python 3.9+, standard library only.
-
-**下一句，已经准备好了。** 每轮完成后，NextPrompt 为你准备一句简短的下一步提示词。
-安装时选择 **Y**，有效建议就会**自动复制到剪贴板**：按 **Ctrl+V**（macOS：**Cmd+V**），
-检查后发送，省去手动选中和复制。
-
-- **通常几秒就绪。** 独立轻量会话生成建议；15 轮真实模型测试中，11 轮耗时
-  **3–5 秒**，平均 **4.37 秒**。完整样本范围为 3.06–6.56 秒，实际速度随模型和网络变化。
-- **为低 token 开销而设计。** 只使用最近 5 条可见消息（最多 8000 字符），默认轻量模型
-  配合 `low` 思考，只生成一句建议（最多 20 个词、240 字符）。独立请求仍会消耗额度；
-  完整输入、输出与思考 token 尚未计量，不能据此保证“几乎零消耗”。
-- **自动加入剪贴板，直接粘贴继续。** 安装选择 Y 后会保存偏好，并在结束报告中确认已开启。
-  默认开启（直接回车即可），建议就绪时还会弹出系统通知；选择 N 则仅显示建议，可随时通过 `$nextprompt-setup` 切换。
 
 **Your next instruction, ready to paste.** Opt into automatic clipboard copy during installation,
 then paste, review and send. Most of our 15 measured synthetic turns took **3–5 seconds**
@@ -102,7 +91,7 @@ openSUSE Leap 15), the Linux installer tries its versioned packages newest first
 `python3.12` (apt), `python3.11` or `python39` (dnf/yum) and `python312` (zypper). If none
 is available it stops and says which old Python it found, instead of reporting success.
 
-Clone **Jineggegg/NextPrompt** with Git. The plugin bundles all six skills; no
+Clone **Jineggegg/codex-next-prompt** with Git. The plugin bundles all six skills; no
 package publication or pip installation is needed. Commands in this guide use
 `python`; on macOS/Linux use `python3` if `python` is unavailable, or a versioned command
 such as `python3.12` if both are older than 3.9.
@@ -110,8 +99,8 @@ such as `python3.12` if both are older than 3.9.
 Windows quick install:
 
 ```powershell
-git clone https://github.com/Jineggegg/NextPrompt.git
-Set-Location NextPrompt
+git clone https://github.com/Jineggegg/codex-next-prompt.git
+Set-Location codex-next-prompt
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
@@ -131,8 +120,8 @@ after verifying its Python Software Foundation signature; it never requests elev
 macOS / Linux install:
 
 ```sh
-git clone https://github.com/Jineggegg/NextPrompt.git
-cd NextPrompt
+git clone https://github.com/Jineggegg/codex-next-prompt.git
+cd codex-next-prompt
 sh scripts/install.sh            # add --auto-copy on|off --notify on|off for unattended use, --probe to test inference
 ```
 
@@ -144,8 +133,8 @@ Manual install (Codex prints no NextPrompt instructions; the one-time report app
 the first trusted session):
 
 ```sh
-git clone https://github.com/Jineggegg/NextPrompt.git
-cd NextPrompt
+git clone https://github.com/Jineggegg/codex-next-prompt.git
+cd codex-next-prompt
 python scripts/doctor.py --probe
 codex plugin marketplace add .
 codex plugin add nextprompt@nextprompt
@@ -160,7 +149,7 @@ probe. Login status and model catalog entries alone are not proof of working inf
 Alternatively, register any existing checkout by its absolute path:
 
 ```sh
-codex plugin marketplace add /absolute/path/to/NextPrompt
+codex plugin marketplace add /absolute/path/to/codex-next-prompt
 codex plugin add nextprompt@nextprompt
 ```
 
@@ -168,9 +157,6 @@ These CLI commands were tested in an isolated Codex home. No pip installation
 is needed to use the plugin. Restart Codex, then open **`/hooks` and review/trust the
 NextPrompt hook**. Installing a plugin does not automatically trust its executable
 hooks. Do not bypass trust review for normal use.
-
-See [local test checklist](LOCAL_TEST.md) for a Chinese quick start and clipboard
-checks.
 
 ## After installation: no setup required for suggestions
 

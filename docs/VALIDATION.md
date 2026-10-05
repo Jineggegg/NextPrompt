@@ -340,8 +340,8 @@ desktop Tested. This executor lacks a clipboard backend, so no clipboard was
 overwritten and no clipboard restore was necessary. OSC 52 is off by default.
 
 CI is configured for Ubuntu/Windows/macOS and Python 3.10/3.12. Hosted results are
-available to the owner in the private repository's
-[Actions page](https://github.com/Jineggegg/NextPrompt/actions).
+on the repository's
+[Actions page](https://github.com/Jineggegg/codex-next-prompt/actions).
 Local execution used Python 3.12 on headless Linux.
 
 ## External blockers and interface differences
@@ -358,7 +358,7 @@ Local execution used Python 3.12 on headless Linux.
    request continuation after this hook runs; no public aggregate-final-stop field
    exists. NextPrompt never requests continuation and skips `stop_hook_active` runs.
 
-Source delivery targets the personal private repository `Jineggegg/NextPrompt`,
-with a feature PR into `main`. No public release or package publication is planned.
-The owner can install the plugin from an authenticated checkout and follow
-[the local checklist](LOCAL_TEST.md) for real-account and desktop validation.
+Source delivery targets the repository `Jineggegg/codex-next-prompt`, with a feature
+PR into `main`. No package publication is planned. The owner can install the plugin
+from a checkout and follow the [full guide](GUIDE.md) for real-account and desktop
+validation.

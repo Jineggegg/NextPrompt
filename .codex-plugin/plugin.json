@@ -1,11 +1,11 @@
 {
   "name": "nextprompt",
   "version": "0.1.13",
-  "description": "Lightweight next-prompt suggestions after completed Codex turns.",
+  "description": "Codex Next Prompt: generates your next prompt from the conversation context and copies it to your clipboard.",
   "skills": "./skills",
   "hooks": "./hooks/hooks.json",
   "interface": {
-    "displayName": "NextPrompt",
-    "shortDescription": "One useful next prompt, with optional clipboard copy."
+    "displayName": "Codex Next Prompt",
+    "shortDescription": "Your next prompt, ready to paste."
   }
 }

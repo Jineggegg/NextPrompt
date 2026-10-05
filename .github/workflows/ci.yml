@@ -1,19 +1,25 @@
 name: CI
 on:
   push:
+    branches: [main]
   pull_request:
 permissions:
   contents: read
 jobs:
   tests:
-    name: tests (linux, ${{ matrix.python }})
+    name: tests (${{ matrix.os }}, ${{ matrix.python }})
     strategy:
       fail-fast: false
       matrix:
+        # GitHub-hosted runners are free for public repositories.
+        os: [ubuntu-latest]
         python: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
-    # GitHub-hosted runner: in a public repo, fork PRs must never run on a
-    # self-hosted machine. Windows and macOS are tested by hand; see CONTRIBUTING.md.
-    runs-on: ubuntu-latest
+        include:
+          - {os: windows-latest, python: '3.9'}
+          - {os: windows-latest, python: '3.14'}
+          - {os: macos-latest, python: '3.9'}
+          - {os: macos-latest, python: '3.14'}
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
