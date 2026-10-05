@@ -36,7 +36,14 @@ function Get-Command {
             if ($global:case.py -eq 'available') { return [PSCustomObject]@{ Source = 'Fake-Py' } }
             return $null
         }
-        'codex' { return [PSCustomObject]@{ Source = 'Fake-Codex' } }
+        'codex' {
+            if ($global:case.codex -eq 'path') { return [PSCustomObject]@{ Source = 'Fake-Codex' } }
+            return $null
+        }
+        { $_ -like '*\OpenAI\Codex\bin\*\codex.exe' } {
+            $global:calls.Add(@{ command = 'codex-app'; arguments = @($Name) })
+            return [PSCustomObject]@{ Source = 'Fake-Codex' }
+        }
         default { throw 'Unexpected command lookup in installer' }
     }
 }
@@ -271,6 +278,21 @@ def test_preference_failure_never_reports_success(overrides):
     assert result["config"] is None
 
 
+def test_codex_app_executable_is_used_when_codex_is_not_on_path():
+    # A terminal outside the Codex app has no codex command.
+    result = run_installer(codex="app", auto_copy="on", notify="on")
+    assert result["success"]
+    commands = [c["command"] for c in result["calls"]]
+    assert commands == ["codex-app", "codex", "codex", "doctor", "setup"]
+    assert result["calls"][0]["arguments"][0].endswith(r"\0123abcd\codex.exe")
+
+
+def test_missing_codex_never_registers_plugin():
+    result = run_installer(codex="missing", auto_copy="on", notify="on")
+    assert not result["success"]
+    assert not any(c["command"] in ("codex", "doctor", "setup") for c in result["calls"])
+
+
 def run_installer(**overrides):
     case = {
         "python": "existing",
@@ -284,6 +306,7 @@ def run_installer(**overrides):
         "prompt_error": False,
         "py": "missing",
         "signature": "valid",
+        "codex": "path",
     }
     case.update(overrides)
     env = {
@@ -293,6 +316,12 @@ def run_installer(**overrides):
     }
     with tempfile.TemporaryDirectory(prefix="nextprompt-install-test-") as data_dir:
         env.update(NEXTPROMPT_TEST_PYTHON=sys.executable, NEXTPROMPT_TEST_DATA=data_dir)
+        # A stand-in for the Codex app's own codex.exe; never the real one on this machine.
+        env["LOCALAPPDATA"] = str(Path(data_dir) / "localappdata")
+        if case["codex"] == "app":
+            app_codex = Path(env["LOCALAPPDATA"], "OpenAI", "Codex", "bin", "0123abcd", "codex.exe")
+            app_codex.parent.mkdir(parents=True)
+            app_codex.write_bytes(b"")
         result = subprocess.run(
             [SHELL, "-NoProfile", "-NonInteractive", "-Command", HARNESS],
             env=env,

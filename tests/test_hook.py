@@ -322,6 +322,8 @@ def run_shipped_hook(tmp_path, interpreters, old=()):
         "PATH": str(bin_dir),
         "PLUGIN_ROOT": str(ROOT),
         "PLUGIN_DATA": str(tmp_path / "data"),
+        # Keep the real per-user Python out of the Windows fallback candidates.
+        "LOCALAPPDATA": str(tmp_path / "localappdata"),
     }
     if os.name == "nt":
         # Codex runs `%COMSPEC% /C "<command>"` on Windows.
@@ -346,6 +348,23 @@ def test_shipped_hook_without_python_fails_without_continuing(tmp_path):
     result = run_shipped_hook(tmp_path, [])
     # Codex reports a failed hook; exit code 2 would instead continue the turn.
     assert result.returncode not in (0, 2)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows default install folders")
+@pytest.mark.parametrize(
+    "folder", [r"Programs\Python\Python312", r"Python\bin"], ids=["python.org", "pymanager"]
+)
+def test_shipped_hook_finds_python_off_path_in_default_folder(tmp_path, folder):
+    # Codex keeps the PATH it started with: a Python installed afterwards is off PATH.
+    target = tmp_path / "localappdata" / folder
+    target.parent.mkdir(parents=True)
+    base = Path(getattr(sys, "_base_executable", sys.executable)).parent
+    subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(target), str(base)], check=True, capture_output=True
+    )
+    result = run_shipped_hook(tmp_path, [])
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == b""
 
 
 @pytest.mark.skipif(os.name == "nt", reason="python3.X commands are a macOS / Linux convention")

@@ -152,7 +152,7 @@ if ! find_python; then
         fail "Python was installed, but no python3, python or python3.X command with 3.9+ is on PATH. Open a new terminal, then rerun this script."
     fi
 fi
-command -v codex >/dev/null 2>&1 || fail "Codex CLI is required. Install or repair Codex, then rerun this script."
+command -v codex >/dev/null 2>&1 || fail "The codex command was not found. Codex app users: paste the install prompt from the README into Codex instead (the app's own shell has codex). Otherwise install Codex CLI, then rerun this script."
 
 echo "Python ready: $("$python" -c "import sys; print('.'.join(map(str, sys.version_info[:3])))")"
 codex plugin marketplace add "$repo_root" || fail "Could not register the local nextprompt marketplace."

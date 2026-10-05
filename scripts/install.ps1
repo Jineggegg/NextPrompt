@@ -141,9 +141,27 @@ if ($null -eq $python) {
     throw "Python 3.12 was installed, but no python, python3 or py command with Python 3.9+ is visible yet. Close and reopen PowerShell, then rerun this script."
 }
 
-$codex = Get-Command codex -ErrorAction SilentlyContinue
+function Find-Codex {
+    $command = Get-Command codex -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        return $command
+    }
+    # The Codex app unpacks its own codex.exe here; outside the app it is not on PATH.
+    if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+        return $null
+    }
+    $bundled = Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA "OpenAI\Codex\bin\*\codex.exe") -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if ($null -eq $bundled) {
+        return $null
+    }
+    return Get-Command $bundled.FullName -ErrorAction SilentlyContinue
+}
+
+$codex = Find-Codex
 if ($null -eq $codex) {
-    throw "Codex CLI is required. Install or repair Codex, then rerun this script."
+    throw "Codex was not found. Install and open the Codex app once (or install Codex CLI), then rerun this script."
 }
 
 $pythonArgs = @($python.Arguments)

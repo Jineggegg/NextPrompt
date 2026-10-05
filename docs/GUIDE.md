@@ -3,7 +3,7 @@
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 It is published as **Codex Next Prompt** (repository `Jineggegg/codex-next-prompt`);
 `nextprompt` is the package, plugin and marketplace name.
-Version: **0.2.0**. Runtime: Python 3.9+, standard library only.
+Version: **0.2.1**. Runtime: Python 3.9+, standard library only.
 
 **Your next instruction, ready to paste.** Opt into automatic clipboard copy during installation,
 then paste, review and send. Most of our 15 measured synthetic turns took **3–5 seconds**
@@ -80,7 +80,10 @@ The hook runs `python` on PATH and falls back to `python3`, then to the Windows 
 launcher, then to the versioned commands `python3.15` down to `python3.9`, when the previous
 one is missing or older than Python 3.9, so stock macOS (Python 3.9), Linux (also releases
 whose default `python3` is older but have a `python3.X` installed next to it) and
-py-launcher-only Windows installs need no extra setup. The runtime
+py-launcher-only Windows installs need no extra setup. On Windows it finally tries the
+per-user default locations (`%LOCALAPPDATA%\Programs\Python\Launcher\py.exe`,
+`%LOCALAPPDATA%\Python\bin\python.exe` and `%LOCALAPPDATA%\Programs\Python\Python3X\python.exe`),
+because Codex keeps the PATH it started with and a Python installed later is not on it. The runtime
 and Hook never install software. Only the explicitly invoked installers do, and only when
 Python 3.9+ is missing: on Windows, `winget` installs Python 3.12 for the current user
 (without `winget`, the official python.org installer is downloaded and run only if its
@@ -95,6 +98,10 @@ Clone **Jineggegg/codex-next-prompt** with Git. The plugin bundles all six skill
 package publication or pip installation is needed. Commands in this guide use
 `python`; on macOS/Linux use `python3` if `python` is unavailable, or a versioned command
 such as `python3.12` if both are older than 3.9.
+
+Codex app (no separate Codex CLI needed): paste the install prompt from the README's
+"Install with Codex" section into a Codex chat and approve the one command it runs. The app and
+the CLI share `~/.codex`, so either install works in both.
 
 Windows quick install:
 
