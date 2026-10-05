@@ -1,5 +1,5 @@
 {
   "name": "nextprompt",
-  "interface": {"displayName": "NextPrompt"},
+  "interface": {"displayName": "Codex Next Prompt"},
   "plugins": [{"name": "nextprompt", "source": {"source": "local", "path": "./"}}]
 }

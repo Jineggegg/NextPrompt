@@ -55,7 +55,7 @@ process-scoped and does not modify system policy.
 
 Do not open a public issue containing credentials, private conversations, unredacted
 rollouts or account files. Report privately through GitHub's private vulnerability
-reporting for [Jineggegg/NextPrompt](https://github.com/Jineggegg/NextPrompt/security)
+reporting for [Jineggegg/codex-next-prompt](https://github.com/Jineggegg/codex-next-prompt/security)
 (Security → Report a vulnerability). Include version, platform, a sanitized
 description and a minimal synthetic reproduction.
 

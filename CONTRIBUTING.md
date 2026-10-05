@@ -10,26 +10,19 @@ python -m ruff format --check .
 python -m pytest -q
 ```
 
-## Testing on each platform / 各平台怎么测
+## Testing on each platform
 
-CI runs Linux only, on a GitHub-hosted `ubuntu-latest` runner (Python 3.9 to 3.14).
-Windows and macOS are not in CI yet, so every PR is tested on all three platforms like this:
+CI runs on GitHub-hosted runners, which are free for public repositories, on every PR
+and every push to `main`:
 
-- **Linux**: CI on GitHub-hosted `ubuntu-latest`, automatic on every push and PR.
-- **Windows**: run the commands above locally on Songoat's Windows laptop (a fresh clone
-  of the PR branch in a temporary folder). This is the only place
+- **Linux**: `ubuntu-latest`, Python 3.9 to 3.14.
+- **Windows**: `windows-latest`, Python 3.9 and 3.14. This is where
   `tests/test_windows_install.py` runs; check it is not skipped.
-- **macOS**: Claude runs the same commands on Songoat's Mac, reached over Tailscale from
-  the Windows laptop (SSH), again in a fresh clone in a temporary folder. Check that
+- **macOS**: `macos-latest`, Python 3.9 and 3.14. Check that
   `tests/test_unix_install.py` runs and is not skipped.
 
-Record the Windows and macOS results (OS, Python version, commit, pass/fail counts) in a
-PR comment before merging.
-
-按以下方式测试：Linux 由 GitHub 托管的 `ubuntu-latest` 自动跑 CI；
-Windows 在 Songoat 的 Windows 笔记本上本地跑；macOS 由 Claude 通过 Tailscale（从 Windows
-笔记本 SSH）连到 Songoat 的 Mac 上跑。Windows 和 macOS 都用临时文件夹里的全新克隆。
-合并前把 Windows 和 macOS 的结果（系统、Python 版本、提交、通过/失败数量）写在 PR 评论里。
+To run the Windows installer tests locally, set `PSExecutionPolicyPreference=Bypass` for
+that process; the default execution policy blocks the test scripts.
 
 Run the opt-in real CLI suite on POSIX with Codex installed:
 

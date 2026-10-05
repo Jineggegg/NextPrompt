@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Renamed to **Codex Next Prompt**; the repository is now `Jineggegg/codex-next-prompt`
+  (old URLs redirect). Commands, the `nextprompt` package and the plugin id are unchanged.
+- README is English only; the Chinese installation guide (`docs/LOCAL_TEST.md`) was removed
+  in favor of `docs/GUIDE.md`.
+- CI also runs on GitHub-hosted Windows and macOS (Python 3.9 and 3.14), and only once per
+  PR push.
 - SECURITY.md: the Windows installer section now matches `scripts/install.ps1`
   (Python 3.9+, and the signature-checked python.org fallback when `winget` is
   unavailable).
