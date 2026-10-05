@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- SECURITY.md: the Windows installer section now matches `scripts/install.ps1`
+  (Python 3.9+, and the signature-checked python.org fallback when `winget` is
+  unavailable).
 - Suggestions only when they help: the Codex model writes a suggestion line only for three
   kinds of step: a part the user named or planned that is not done yet (the next chapter,
   page or day, including parts left for later), finishing what this turn left unfinished or
