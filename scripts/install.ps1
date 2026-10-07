@@ -10,7 +10,6 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$minimumPython = [version]"3.9"
 $pythonPackage = "Python.Python.3.12"
 $pythonOrgVersion = "3.12.10"
 $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
@@ -24,49 +23,7 @@ function Update-ProcessPath {
     $env:Path = $pathParts -join [IO.Path]::PathSeparator
 }
 
-function Get-CompatiblePython {
-    # Same order as the hook command: python, python3, then the py launcher.
-    $candidates = @(
-        @{ Name = "python"; Arguments = @() },
-        @{ Name = "python3"; Arguments = @() },
-        @{ Name = "py"; Arguments = @("-3") }
-    )
-    foreach ($candidate in $candidates) {
-        $command = Get-Command $candidate.Name -ErrorAction SilentlyContinue
-        if ($null -eq $command) {
-            continue
-        }
-
-        $pythonArgs = $candidate.Arguments
-        try {
-            $versionText = & $command.Source @pythonArgs -c "import sys; print('.'.join(map(str, sys.version_info[:3])))" 2>$null
-        }
-        catch {
-            # Windows App Execution Aliases can throw instead of returning a version.
-            continue
-        }
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($versionText)) {
-            continue
-        }
-
-        try {
-            $version = [version]($versionText | Select-Object -Last 1)
-        }
-        catch {
-            continue
-        }
-
-        if ($version -ge $minimumPython) {
-            return [PSCustomObject]@{
-                Command = $command.Source
-                Arguments = $pythonArgs
-                Version = $version
-            }
-        }
-    }
-
-    return $null
-}
+. (Join-Path $PSScriptRoot "python.ps1")
 
 function Install-PythonFromPythonOrg {
     # Used only when winget is unavailable: the official installer, accepted only
@@ -138,7 +95,7 @@ if ($null -eq $python) {
     $python = Get-CompatiblePython
 }
 if ($null -eq $python) {
-    throw "Python 3.12 was installed, but no python, python3 or py command with Python 3.9+ is visible yet. Close and reopen PowerShell, then rerun this script."
+    throw "Python 3.12 was installed, but no compatible Python executable is visible yet. Close and reopen PowerShell, then rerun this script."
 }
 
 function Find-Codex {

@@ -78,7 +78,7 @@ def test_doctor_reports_invalid_config_and_continues(tmp_path, capsys, doctor_pr
     output = capsys.readouterr().out
     assert "Config              ✗ invalid config" in output
     assert "Repair or delete" in output
-    assert "Suggestion model    ✓" in output  # Remaining checks still run.
+    assert "Hook self-test      ✓" in output  # Remaining checks still run.
     assert "Check configuration with nextprompt doctor" not in output
 
 
@@ -107,6 +107,7 @@ def doctor_provider(monkeypatch):
         lambda **k: Mock(available=lambda: False, backend_name=lambda: "unavailable"),
     )
     monkeypatch.setattr("nextprompt.cli.hook_interpreter", lambda: ("python3", "3.9.6"))
+    monkeypatch.setattr("nextprompt.cli.check_hooks", lambda root: True)
     return provider
 
 
@@ -137,13 +138,16 @@ def test_doctor_probe_succeeds_without_clipboard(tmp_path, capsys, doctor_provid
 def test_doctor_without_probe_does_not_run_inference(tmp_path, capsys, doctor_provider):
     assert main(["--data-dir", str(tmp_path), "doctor"]) == 0
     output = capsys.readouterr().out
-    assert "(catalog)" in output
+    assert "no separate CLI login or model request needed" in output
+    doctor_provider.check_cli.assert_not_called()
+    doctor_provider.discover_models.assert_not_called()
     assert "defaults ready (auto-copy on)" in output
     assert "setup pending" not in output
     doctor_provider.generate.assert_not_called()
 
 
 def test_doctor_missing_auth_returns_nonzero(tmp_path, capsys, doctor_provider, monkeypatch):
+    ConfigStore(tmp_path).update(lambda cfg: cfg.update(source="model"))
     monkeypatch.setattr(
         "nextprompt.cli.run_process",
         lambda *a, **k: subprocess.CompletedProcess(a, 1, b"", b"Not logged in"),
@@ -213,3 +217,9 @@ def test_hook_interpreter_rejects_old_python(monkeypatch):
         lambda *a, **k: subprocess.CompletedProcess(a, 0, b"3.8.18\n", b""),
     )
     assert hook_interpreter() is None
+
+
+def test_doctor_fails_on_real_launcher_failure(tmp_path, capsys, doctor_provider, monkeypatch):
+    monkeypatch.setattr("nextprompt.cli.check_hooks", lambda root: False)
+    assert main(["--data-dir", str(tmp_path), "doctor"]) == 1
+    assert "Hook self-test      ✗" in capsys.readouterr().out

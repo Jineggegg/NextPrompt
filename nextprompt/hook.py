@@ -135,14 +135,17 @@ ASKS_USER = re.compile(r"[?？][\s*_`)）」』\"'”’]*$|" + ASKS_EXPLICITLY,
 # After a suggestion line, a trailing question mark is usually content (dialogue in a
 # story, a rhetorical line), so only an explicit request for the user's answer counts.
 ASKS_USER_EXPLICITLY = re.compile(ASKS_EXPLICITLY, re.I)
-WELCOME_MARKER = ".welcome-v1"
+WELCOME_MARKER = ".welcome-v2"
 
 
 def first_run_report(payload: object, *, store: ConfigStore | None = None) -> str | None:
-    """Show onboarding once, on the first trusted root SessionStart hook."""
+    """Also cover installs into an existing chat, whose SessionStart already ran."""
     if os.environ.get("NEXTPROMPT_INTERNAL") == "1":
         return None
-    if not isinstance(payload, dict) or payload.get("hook_event_name") != "SessionStart":
+    if not isinstance(payload, dict) or payload.get("hook_event_name") not in (
+        "SessionStart",
+        "UserPromptSubmit",
+    ):
         return None
     try:
         store = store or ConfigStore()
@@ -152,7 +155,7 @@ def first_run_report(payload: object, *, store: ConfigStore | None = None) -> st
         copy = "开 / on" if cfg["clipboard"]["auto_copy"] is not False else "关 / off"
         notify = "开 / on" if cfg["notify"] else "关 / off"
         return (
-            "NextPrompt 安装完成，已就绪 / Installed and ready.\n"
+            "NextPrompt 已加载 / Loaded.\n"
             "用法 / Use: 有值得做的下一步时，回复末尾会给出一条建议，引号里的指令会复制到剪贴板；"
             "请自行检查、粘贴并发送，插件不会自动发送。 / When a next step is worth it, the "
             "reply ends with a suggestion whose quoted prompt is copied. Review, paste, and "
@@ -160,6 +163,9 @@ def first_run_report(payload: object, *, store: ConfigStore | None = None) -> st
             "it is never sent automatically.\n"
             f"当前设置 / Current: 自动复制到剪贴板 / auto-copy {copy}；"
             f"桌面通知 / desktop notification {notify}（默认均开启 / both on by default）。\n"
+            "已完成的任务通常不显示建议。请在 Codex 的 Hook 设置（CLI: /hooks）中确认三个 "
+            "Hook 均已信任。 / Completed tasks usually have no suggestion. Review all three "
+            "hooks in Codex; this message alone does not verify clipboard access.\n"
             "关闭通知 / Turn notifications off: 使用 $nextprompt-setup 并说“关闭通知” "
             "/ use $nextprompt-setup and ask to turn notifications off."
         )

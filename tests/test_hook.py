@@ -296,7 +296,7 @@ def shipped_hook_command():
     return hooks["hooks"]["Stop"][0]["hooks"][0]["command"]
 
 
-def run_shipped_hook(tmp_path, interpreters, old=()):
+def run_shipped_hook(tmp_path, interpreters, old=(), payload=b"[]"):
     """Run the real hooks.json command as Codex does, with only the given commands on PATH.
 
     Commands in `old` behave like an interpreter older than 3.9: they exit 1.
@@ -332,7 +332,9 @@ def run_shipped_hook(tmp_path, interpreters, old=()):
     else:
         # Codex runs `$SHELL -lc <command>`; /bin/sh covers the shared syntax.
         args = ["/bin/sh", "-c", shipped_hook_command()]
-    return subprocess.run(args, input=b"[]", capture_output=True, env=env, cwd=tmp_path, timeout=10)
+    return subprocess.run(
+        args, input=payload, capture_output=True, env=env, cwd=tmp_path, timeout=10
+    )
 
 
 @pytest.mark.parametrize(
@@ -347,7 +349,11 @@ def test_shipped_hook_command_finds_an_interpreter(tmp_path, interpreters):
 def test_shipped_hook_without_python_fails_without_continuing(tmp_path):
     result = run_shipped_hook(tmp_path, [])
     # Codex reports a failed hook; exit code 2 would instead continue the turn.
-    assert result.returncode not in (0, 2)
+    if os.name == "nt":
+        assert result.returncode == 0
+        assert "needs Python 3.9+" in json.loads(result.stdout)["systemMessage"]
+    else:
+        assert result.returncode not in (0, 2)
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows default install folders")
@@ -379,7 +385,9 @@ def test_every_shipped_hook_tries_the_same_interpreters_in_order():
     expected = [" ".join(interpreter) for interpreter in HOOK_INTERPRETERS]
     for event, entries in hooks.items():
         command = entries[0]["hooks"][0]["command"]
-        assert [part.split(" -c ")[0] for part in command.split(" || ")] == expected, event
+        parts = command.split(" || ")
+        assert "run.ps1" in parts[0] and "-ExecutionPolicy Bypass" in parts[0]
+        assert [part.split(" -c ")[0] for part in parts[1:]] == expected, event
 
 
 def test_unix_installer_accepts_the_same_versioned_pythons_as_the_hook():
@@ -392,3 +400,23 @@ def test_unix_installer_braces_variables_next_to_non_ascii_text():
     # macOS /bin/sh (bash 3.2) reads bytes of a following "…" or "，" as part of the name.
     script = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
     assert re.findall(r"\$[A-Za-z_]\w*(?=[^\x00-\x7f])", script, re.ASCII) == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="native Windows shell and Unicode pipes")
+def test_windows_launcher_forwards_unicode_context(tmp_path):
+    data = tmp_path / "data"
+    ConfigStore(data).update(
+        lambda cfg: (cfg.update(notify=False), cfg["clipboard"].update(auto_copy=False))
+    )
+    payload = json.dumps(
+        {
+            "hook_event_name": "Stop",
+            "session_id": "unicode",
+            "last_assistant_message": "第一部分写好了。\n\n→ 要不要「接着写第二部分」？",
+        },
+        ensure_ascii=False,
+    ).encode("utf-8")
+    result = run_shipped_hook(tmp_path, ["python"], payload=payload)
+    assert result.returncode == 0 and result.stdout == b"", result.stderr
+    counts = json.loads((data / ".stats.json").read_text())
+    assert counts["suggested"] == 1

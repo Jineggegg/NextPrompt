@@ -31,7 +31,7 @@ try:
             result = {"systemMessage": report}
             if text:
                 result["hookSpecificOutput"] = {
-                    "hookEventName": "SessionStart",
+                    "hookEventName": payload["hook_event_name"],
                     "additionalContext": text,
                 }
             sys.stdout.buffer.write((json.dumps(result, ensure_ascii=False) + "\n").encode("utf-8"))

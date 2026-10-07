@@ -39,6 +39,13 @@ class SystemClipboardAdapter(ClipboardAdapter):
             "wayland": [("wl-copy", "utf8"), ("xclip", "xclip"), ("xsel", "xsel")],
             "x11": [("xclip", "xclip"), ("xsel", "xsel")],
         }.get(self.info.name, [])
+        if self.info.name == "wsl":
+            # WSLg shares its Linux clipboard with Windows even when .exe interop
+            # is disabled. Only try these when a display is actually configured.
+            if os.environ.get("WAYLAND_DISPLAY"):
+                candidates += [("wl-copy", "utf8")]
+            if os.environ.get("DISPLAY"):
+                candidates += [("xclip", "xclip"), ("xsel", "xsel")]
         self.backends = [(path, kind) for name, kind in candidates if (path := shutil.which(name))]
         self.osc52 = osc52_fallback and self._osc52_capable()
         self._used: str | None = None
