@@ -24,6 +24,12 @@ LIGHTWEIGHT_MODELS = (
 )
 EFFORT_ORDER = ("none", "minimal", "low")
 INSTRUCTION_PATH = Path(__file__).with_name("instruction.txt")
+RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {"prompt": {"type": ["string", "null"]}},
+    "required": ["prompt"],
+    "additionalProperties": False,
+}
 # Capability cache: verified CLI + model catalog only, never conversation content.
 CACHE_NAME = "codex-cache.json"
 CACHE_TTL_SECONDS = 12 * 3600
@@ -31,6 +37,21 @@ CACHE_TTL_SECONDS = 12 * 3600
 
 class ProviderUnavailable(RuntimeError):
     """Safe category-only error. Never attach raw subprocess output."""
+
+
+def response_prompt(output: bytes) -> str:
+    """Accept only the promised instruction/null envelope, never surrounding prose."""
+    try:
+        if len(output) > 16384:
+            raise ValueError
+        value = json.loads(output)
+        if not isinstance(value, dict) or set(value) != {"prompt"}:
+            raise ValueError
+        if value["prompt"] is not None and not isinstance(value["prompt"], str):
+            raise ValueError
+        return value["prompt"] or ""
+    except (ValueError, UnicodeError):
+        raise ProviderUnavailable("unavailable") from None
 
 
 def codex_app_executable() -> str | None:
@@ -264,6 +285,8 @@ class CodexSuggestionProvider(SuggestionProvider):
             raise ProviderUnavailable("model") from None
 
     def inference_command(self, selection: ModelSelection, cwd: Path) -> list[str]:
+        schema = cwd / "suggestion.schema.json"
+        schema.write_text(json.dumps(RESPONSE_SCHEMA), encoding="utf-8")
         args = [
             self.executable(),
             "exec",
@@ -279,6 +302,8 @@ class CodexSuggestionProvider(SuggestionProvider):
             "read-only",
             "-m",
             selection.name,
+            "--output-schema",
+            str(schema),
         ]
         for feature in (
             "hooks",
@@ -309,6 +334,7 @@ class CodexSuggestionProvider(SuggestionProvider):
             "features.skip_host_skill_discovery": True,
             "tools.update_plan.enabled": False,
             "tools.experimental_request_user_input.enabled": False,
+            "agents.enabled": False,
             # Smaller, identical request prefixes: faster input and better prompt caching.
             "include_permissions_instructions": False,
             "include_environment_context": False,
@@ -366,7 +392,7 @@ class CodexSuggestionProvider(SuggestionProvider):
                         # Auth, quota, transport and unknown errors do not justify
                         # charging another model. All attempts share one deadline.
                         raise ProviderUnavailable(category)
-                    text = result.stdout.decode("utf-8", "strict")
+                    text = response_prompt(result.stdout)
                     self.selection = candidate
                     if not cached:
                         self._store_models(

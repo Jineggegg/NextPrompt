@@ -8,6 +8,7 @@ import random
 import re
 import tempfile
 import unicodedata
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -88,7 +89,7 @@ STYLE_STATE = ".styles.json"
 STYLE_SESSIONS = 50
 # The line the root model writes: its own words around one quoted prompt, e.g.
 # `→ 要不要「给 PDF 加上目录」？`, usually on its own line but sometimes at the end of the
-# last paragraph. Optional bold, quote or list markers are formatting.
+# last paragraph. Optional bold or list markers are formatting; blockquotes are content.
 SUGGESTION_LINE = re.compile(
     r"(?:^\s*(?:[>*_-]\s*)*(?:\*\*|__)?(?:→|->)|(?<=[。！？!?.…])\s*(?:\*\*|__)?→)\s*(.+)$"
 )
@@ -128,6 +129,7 @@ ASKS_EXPLICITLY = (
     r"(?:哪(?:个|一个|個|一個|种|種|些)|还是|還是)[^。！!\n]{0,30}[?？]|"
     r"\b(?:please (?:choose|confirm|provide|tell me)|tell me (?:which|what)|which (?:one|option) "
     r"(?:do|would) you)\b|\bwhich\b[^.!\n]{0,60}\?|"
+    r"\b(?:do|would) you (?:prefer|want|like)\b[^.!?\n]{0,100}\?|"
     r"教えてください|選んでください|알려 주세요|선택해 주세요"
 )
 # A reply that ends by asking the user something waits for the user's own answer.
@@ -135,6 +137,7 @@ ASKS_USER = re.compile(r"[?？][\s*_`)）」』\"'”’]*$|" + ASKS_EXPLICITLY,
 # After a suggestion line, a trailing question mark is usually content (dialogue in a
 # story, a rhetorical line), so only an explicit request for the user's answer counts.
 ASKS_USER_EXPLICITLY = re.compile(ASKS_EXPLICITLY, re.I)
+SPEAKER = re.compile(r"^\s*(?:\*\*)?([^\W\d_][\w .·-]{0,23}?)(?:\*\*)?\s*[:：]")
 WELCOME_MARKER = ".welcome-v2"
 
 
@@ -241,8 +244,11 @@ def _split_suggestion(line: str) -> tuple[str, str | None]:
     """
     match = SUGGESTION_LINE.search(line)
     if match:
-        quoted = QUOTED.search(match.group(1)) or MISCLOSED.search(match.group(1))
-        return line[: match.start()], next(g for g in quoted.groups() if g) if quoted else ""
+        quotes = list(QUOTED.finditer(match.group(1)))
+        if not quotes:
+            quotes = list(MISCLOSED.finditer(match.group(1)))
+        prompt = next(g for g in quotes[0].groups() if g) if len(quotes) == 1 else ""
+        return line[: match.start()], prompt
     # Without the arrow, only the closing sentence can be the offer.
     spans = [m.span() for m in QUOTED.finditer(line)]
     start = 0
@@ -259,6 +265,34 @@ def _split_suggestion(line: str) -> tuple[str, str | None]:
     return line, None
 
 
+def _reply_lines(reply: str) -> list[str | None]:
+    """Nonblank lines, with Markdown code/quotes retained as non-copyable boundaries."""
+    lines: list[str | None] = []
+    fence = ""
+    quoted_block = False
+    for line in reply.splitlines():
+        if not line.strip():
+            quoted_block = False
+            continue
+        if fence:
+            if re.fullmatch(
+                r" {0,3}" + re.escape(fence[0]) + "{" + str(len(fence)) + r",}\s*", line
+            ):
+                fence = ""
+            lines.append(None)
+        elif line.lstrip().startswith(">"):
+            quoted_block = True
+            lines.append(None)
+        elif quoted_block or line.startswith(("    ", "\t")):
+            lines.append(None)
+        elif match := re.match(r" {0,3}(`{3,}|~{3,})", line):
+            fence = match.group(1)
+            lines.append(None)
+        else:
+            lines.append(line)
+    return lines
+
+
 def inline_suggestion(last_reply: object) -> str | None:
     """The prompt the root model suggested at the end of its reply, not rewritten.
 
@@ -268,14 +302,19 @@ def inline_suggestion(last_reply: object) -> str | None:
     """
     if not isinstance(last_reply, str) or not last_reply.strip():
         return None
-    lines = [line for line in last_reply.splitlines() if line.strip()][-3:]
+    lines = _reply_lines(last_reply)[-3:]
+    if not lines or lines[-1] is None:
+        return None
     text = _split_suggestion(lines[-1])[1]
     if text is None:
-        labelled = (INLINE_LINE.match(line) for line in reversed(lines))
-        match = next((m for m in labelled if m), None)
-        if not match:
+        for line in reversed(lines):
+            if line is None:
+                break
+            if match := INLINE_LINE.match(line):
+                text = match.group(1)
+                break
+        if text is None:
             return None
-        text = match.group(1)
     # Bold or code markers around the whole prompt are formatting.
     text = text.strip().strip("*`").strip()
     if len(text) > INLINE_MAX_CHARS or redact(text) != text:
@@ -289,7 +328,7 @@ def asks_user(last_reply: object) -> bool:
     """Whether the reply, apart from any suggestion line, ends by asking the user."""
     if not isinstance(last_reply, str):
         return False
-    body = [line for line in last_reply.splitlines() if line.strip()]
+    body = [line for line in _reply_lines(last_reply) if line is not None]
     pattern, window = ASKS_USER, 2
     if body:
         before, prompt = _split_suggestion(body[-1])
@@ -298,7 +337,17 @@ def asks_user(last_reply: object) -> bool:
             # Earlier lines are often written content ("请确认…" in a guide), not a request.
             pattern, window = ASKS_USER_EXPLICITLY, 1
     body = [line for line in body if not INLINE_LINE.match(line)]
-    return any(pattern.search(line.strip()) for line in body[-window:])
+    # Repeated alternating speaker labels identify a script even without quotation
+    # marks. A single heading such as "Question:" must still wait for the user.
+    speakers = Counter(m.group(1) for line in body if (m := SPEAKER.match(line)))
+    dialogue = {name for name, count in speakers.items() if count >= 2}
+    if len(dialogue) >= 2:
+        body = [
+            line if not (m := SPEAKER.match(line)) or m.group(1) not in dialogue else ""
+            for line in body
+        ]
+    # A character's quoted words are not a request for the real user's answer.
+    return any(pattern.search(QUOTED.sub("", line).strip()) for line in body[-window:])
 
 
 def _next_style(count: int, session: object, store: ConfigStore | None) -> int:

@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-08",
+  "plugin": "0.2.3",
+  "codex": "0.160.0",
+  "baseline": {
+    "cases": 48,
+    "flagged": 3,
+    "required": 17,
+    "forbidden": 31,
+    "unwanted_copies": 2,
+    "missing_copy": 1
+  },
+  "final_runs": [
+    {
+      "name": "final",
+      "model": "gpt-6-astra",
+      "cases": 48,
+      "required": 17,
+      "forbidden": 31,
+      "flagged": 0
+    },
+    {
+      "name": "heldout",
+      "model": "gpt-6-astra",
+      "cases": 7,
+      "required": 3,
+      "forbidden": 4,
+      "flagged": 0
+    },
+    {
+      "name": "stress",
+      "model": "gpt-6-astra",
+      "cases": 8,
+      "required": 4,
+      "forbidden": 4,
+      "flagged": 0
+    },
+    {
+      "name": "luna-heldout-final",
+      "model": "gpt-6-luna",
+      "cases": 14,
+      "required": 6,
+      "forbidden": 8,
+      "flagged": 0
+    },
+    {
+      "name": "structured-acceptance",
+      "model": "gpt-5.6-luna",
+      "cases": 27,
+      "required": 9,
+      "forbidden": 18,
+      "flagged": 0
+    },
+    {
+      "name": "structured-heldout",
+      "model": "gpt-5.6-luna",
+      "cases": 4,
+      "required": 1,
+      "forbidden": 3,
+      "flagged": 0
+    }
+  ],
+  "final_cases": 108,
+  "latest_stop_replay": {
+    "cases": 77,
+    "passed": 77
+  },
+  "limits": [
+    "Synthetic conversations; not a guarantee for every model or prompt.",
+    "Clipboard and notification calls are observed with isolated test receivers.",
+    "Windows desktop rendering and the friend machine were not exercised.",
+    "A held-out failure becomes a regression case after a fix."
+  ]
+}

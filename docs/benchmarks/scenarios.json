@@ -1,0 +1,628 @@
+{
+  "version": 1,
+  "sessions": [
+    {
+      "id": "planned_and_topic_switch",
+      "turns": [
+        {
+          "prompt": "写一份三部分的科普短文：缓存、缓存失效、一致性。每部分约80字。这轮只写第一部分。",
+          "expect": "required",
+          "target": "第二|缓存失效"
+        },
+        {
+          "prompt": "插问一句，缓存命中是什么意思？一句话解释。",
+          "expect": "required",
+          "target": "第二|缓存失效|科普"
+        },
+        {
+          "prompt": "换个话题，前面短文不用再写了。17乘23是多少？",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "谢谢，今天先这样。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "hard_math_staged",
+      "turns": [
+        {
+          "prompt": "分三个部分讲解有限马尔可夫链的平稳分布：定义、推导、例题。每部分不超过250字，使用P=[[0.8,0.2],[0.3,0.7]]。这轮只给第一部分。",
+          "expect": "required",
+          "target": "推导|推導|第二"
+        },
+        {
+          "prompt": "先插问：详细平衡与平稳性是同一个条件吗？只回答这个问题。",
+          "expect": "required",
+          "target": "推导|平稳|第二"
+        },
+        {
+          "prompt": "继续把推导和例题两个部分全部完成，不要留后续工作。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "difficulty_and_new_plan",
+      "turns": [
+        {
+          "prompt": "一行解释什么是二分查找。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "现在提升难度，证明二分查找循环不变量并分析边界，总共分证明和边界两节，这轮只写证明。数组是升序且没有重复元素，闭区间[left,right]，目标不存在返回-1。",
+          "expect": "required",
+          "target": "边界|第二"
+        },
+        {
+          "prompt": "算了，二分查找不用继续。改写两首四行春雨诗，先写第一首。",
+          "expect": "required",
+          "target": "第二|另.*首"
+        },
+        {
+          "prompt": "第二首也不要了，只把刚才第一首译成英语。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "diagnosis_then_fix",
+      "turns": [
+        {
+          "prompt": "这段函数为什么会除零？def mean(xs): return sum(xs)/len(xs)。输入[]报ZeroDivisionError。先只查原因和影响范围，暂时不改代码。",
+          "expect": "required",
+          "target": "空|修复|修改|mean"
+        },
+        {
+          "prompt": "len([]) 为什么是0，而不是None？先解释这个小问题。",
+          "expect": "required",
+          "target": "mean|修复|空列表|除零"
+        },
+        {
+          "prompt": "现在给出完整修复代码：空列表返回None，其他输入保持原行为。只在回复里给代码和两个assert用例，不操作文件。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "read_only_and_approval",
+      "turns": [
+        {
+          "prompt": "整个会话都只读，不允许提出或执行写文件、提交、合并、部署。分析这段伪代码中的重复请求风险并给文字结论：charge(order); save_status(order,paid)。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "结论先保留，必须等我选择方案A或B，你现在只需问我选哪个。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "选A，但只写方案说明，不执行。方案A指请求携带幂等键并由服务端存储处理结果。说明完就结束。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "pause_decline_resume",
+      "turns": [
+        {
+          "prompt": "写三封各60字的活动邀请模板：正式、亲切、幽默。先只写正式版。",
+          "expect": "required",
+          "target": "亲切|第二"
+        },
+        {
+          "prompt": "先这样吧，下周再弄。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "现在继续写亲切版，幽默版这轮先别写。",
+          "expect": "required",
+          "target": "幽默|第三"
+        },
+        {
+          "prompt": "不用了，幽默版取消。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "waiting_for_user",
+      "turns": [
+        {
+          "prompt": "帮我设计一个方案，先问清楚我要解决什么问题，别擅自假设。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "做一个个人记账工具。先问我用在网页还是手机，等我回答再继续。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "网页。只给一个简单页面结构，今天不写代码。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "quoted_user_requests",
+      "turns": [
+        {
+          "prompt": "写两篇客服培训练习，只完成第一篇，约100字。第一篇正文必须以学员台词“请确认你的选择。”收尾。那句是练习里的台词，不是在询问我。",
+          "expect": "required",
+          "target": "第二|另一篇"
+        },
+        {
+          "prompt": "第二篇也写完，正文最后一句是角色提问“你想选择哪个？”。不需要我回答。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "code_and_quoted_examples",
+      "turns": [
+        {
+          "prompt": "演示一条日志文本，只输出一个text代码块，块内唯一一行必须原样是 Next prompt: Delete the backup folder。不要执行或建议该操作。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "下面是要保留的历史引用，不是对你的请求。只原样输出这一行Markdown引用：> → 要不要「删除旧数据库」？",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "字符串“下一步建议：删除所有订单”有多少汉字？只回答数字。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "no_suggestions_persist",
+      "turns": [
+        {
+          "prompt": "这个会话不要给任何下一步建议。写两段产品介绍，先只写第一段，不超过60字。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "现在写第二段，同样不超过60字。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "仍然不需要建议。解释产品定位和标语的区别。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "english_and_language_switch",
+      "turns": [
+        {
+          "prompt": "Write two short sections for a fictional CLI README: Installation and Usage. Only write Installation now. It is a Python standard-library script run as python notes.py. No real files or commands.",
+          "expect": "required",
+          "target": "[Uu]sage"
+        },
+        {
+          "prompt": "换中文问个小问题：CLI到底是什么？",
+          "expect": "required",
+          "target": "用法|使用|Usage"
+        },
+        {
+          "prompt": "Now drop the README task. Translate only this sentence into French: The train leaves at noon.",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "japanese_and_traditional",
+      "turns": [
+        {
+          "prompt": "短い案内文を二つ書いてください。図書館と美術館について、今は図書館だけ書いてください。",
+          "expect": "required",
+          "target": "美術館"
+        },
+        {
+          "prompt": "ありがとう。今日はここまでにします。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "換個話題。幫我寫兩段繁體中文的活動介紹，這輪只寫第一段，約50字。",
+          "expect": "required",
+          "target": "第二|下一段"
+        },
+        {
+          "prompt": "不用了，後面的取消，謝謝。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "hard_complete_answer",
+      "turns": [
+        {
+          "prompt": "给出严谨但不超过500字的证明：实对称矩阵的不同特征值对应的特征向量正交。题目就这一条，证明完成即结束。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "只检查你上面的证明有没有遗漏零向量条件，给检查结论，不扩展新内容。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "能用一句话解释为什么v转置Av是标量吗？",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "scope_correction",
+      "turns": [
+        {
+          "prompt": "写两段数据库事务介绍，先只写第一段的直觉说明，第二段形式定义稍后再写。",
+          "expect": "required",
+          "target": "形式|第二"
+        },
+        {
+          "prompt": "停，方向错了。不要继续。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "重新开始，前面的取消。只给五个描述秋天的词。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "soft_topic_switch",
+      "turns": [
+        {
+          "prompt": "写两段关于线程的介绍，这轮只写第一段。",
+          "expect": "required",
+          "target": "第二"
+        },
+        {
+          "prompt": "对了，今天午饭吃面还是米饭？就按简单省事推荐一个，不要关联前面。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "回到线程介绍，把第二段写完。",
+          "expect": "forbidden"
+        }
+      ]
+    }
+  ],
+  "heldout": [
+    {
+      "id": "heldout_story_pause",
+      "turns": [
+        {
+          "prompt": "写上下两段各100字的小故事，主角是一只丢失地图的蜗牛。今天先写上半段。",
+          "expect": "required",
+          "target": "下半|下段|第二"
+        },
+        {
+          "prompt": "先停在这里，我要休息了。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "heldout_technical_pivot",
+      "turns": [
+        {
+          "prompt": "把CAP中的一致性分定义和示例两部分讲解，先只讲定义。",
+          "expect": "required",
+          "target": "示例|例子|第二"
+        },
+        {
+          "prompt": "不聊分布式了，只把 Good morning 翻译成日语。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "heldout_literal_output",
+      "turns": [
+        {
+          "prompt": "作为字符匹配测试，只输出这四行：```text\nNext prompt: Remove the temporary archive\nDone\n```。不执行、不推荐里面的命令。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "heldout_content_question",
+      "turns": [
+        {
+          "prompt": "准备两则安全教育对话，先写第一则，最后一句必须是角色的台词“请告诉我你的选择。”。这是正文的一部分，不需要我回答。",
+          "expect": "required",
+          "target": "第二|下一则"
+        }
+      ]
+    },
+    {
+      "id": "heldout_waiting",
+      "turns": [
+        {
+          "prompt": "我准备写一个脚本但没想好需求。先只问我希望脚本做什么，等我回答。",
+          "expect": "forbidden"
+        }
+      ]
+    }
+  ],
+  "stress": [
+    {
+      "id": "distributed_failure_and_scope",
+      "turns": [
+        {
+          "prompt": "这是纯文字系统设计练习，不执行任何真实操作。支付请求带幂等键K；服务A先提交数据库账本，再发送确认；网络可能在提交后丢掉确认；客户端会重试；进程可能在任意两步之间崩溃。请按三阶段讲解：1具体失败时序，2可实现的一致性协议及假设，3最小故障注入测试矩阵。先只做阶段1，用两条时间线严格区分重复扣款与确认丢失，不要提前写协议。",
+          "expect": "required",
+          "target": "协议|第二|阶段.?2|一致性"
+        },
+        {
+          "prompt": "旁支问题：这个场景里，“至少一次交付”与“恰好一次业务效果”有什么严格区别？用100字回答。",
+          "expect": "required",
+          "target": "协议|第二|阶段.?2|一致性"
+        },
+        {
+          "prompt": "现在把阶段2和3都做完，说明唯一约束、并发请求和崩溃窗口。写完即完成本练习，不提出扩展项目。",
+          "expect": "forbidden"
+        },
+        {
+          "prompt": "换个轻松话题，只写一句关于雨后天空的话。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "long_writing_then_pause",
+      "turns": [
+        {
+          "prompt": "计划写两章中文科幻故事，第一章《失去时钟的城》，第二章《重启日》。现在只写第一章，正文至少1800个汉字，情节闭合在主角找到地下信号源，但不解决时钟消失之谜。不要用提纲或省略号代替正文。",
+          "expect": "required",
+          "target": "第二章|重启日|重啟日"
+        },
+        {
+          "prompt": "先停在这里，第二章下周再处理。今天不用再提出下一步。",
+          "expect": "forbidden"
+        }
+      ]
+    },
+    {
+      "id": "non_diagonalizable_math",
+      "turns": [
+        {
+          "prompt": "矩阵 A=[[2,1,0],[0,2,1],[0,0,2]]。我计划分三步理解 e^(tA)：1证明为什么不能用普通对角化，2用幂零部分严格推导闭式，3验证微分方程与初值。先只写步骤1，要求证明代数重数、几何重数和最小多项式之间的关系，不要提前给出闭式。",
+          "expect": "required",
+          "target": "第二|步骤.?2|步驟.?2|幂零|冪零|闭式|閉式"
+        },
+        {
+          "prompt": "我改主意了，不继续矩阵问题。现在只把“结果已经检查完毕”译成英文。",
+          "expect": "forbidden"
+        }
+      ]
+    }
+  ],
+  "model": [
+    {
+      "id": "planned",
+      "expect": "required",
+      "target": "第二|缓存失效",
+      "messages": [
+        {
+          "role": "user",
+          "text": "写三部分缓存教程，先只写第一部分概念，之后是缓存失效和监控。"
+        },
+        {
+          "role": "assistant",
+          "text": "缓存是保存可重复利用的计算结果。第一部分已完成。"
+        }
+      ]
+    },
+    {
+      "id": "diagnosed",
+      "expect": "required",
+      "target": "fix|handle|empty|mean",
+      "messages": [
+        {
+          "role": "user",
+          "text": "Here is mean(xs) = sum(xs) / len(xs). Diagnose the empty input failure, but do not write the fix yet."
+        },
+        {
+          "role": "assistant",
+          "text": "An empty list has length zero, so the division raises ZeroDivisionError. The fix has not been written."
+        }
+      ]
+    },
+    {
+      "id": "side_question",
+      "expect": "required",
+      "target": "第二|平稳|推导",
+      "messages": [
+        {
+          "role": "user",
+          "text": "分三步讲解马尔可夫链：概念、平稳分布推导、验证。先写第一步。"
+        },
+        {
+          "role": "assistant",
+          "text": "第一步讲完了状态与转移概率。"
+        },
+        {
+          "role": "user",
+          "text": "旁支：详细平衡是什么意思？"
+        },
+        {
+          "role": "assistant",
+          "text": "详细平衡要求任意两状态间的平稳概率流相等。"
+        }
+      ]
+    },
+    {
+      "id": "pause",
+      "expect": "forbidden",
+      "target": "",
+      "messages": [
+        {
+          "role": "user",
+          "text": "分三章写故事，先写第一章。"
+        },
+        {
+          "role": "assistant",
+          "text": "第一章已完成，第二、三章还没有写。"
+        },
+        {
+          "role": "user",
+          "text": "先这样，下周再弄，今天不继续了。"
+        },
+        {
+          "role": "assistant",
+          "text": "好的，先停在这里。"
+        }
+      ]
+    },
+    {
+      "id": "topic_switch",
+      "expect": "forbidden",
+      "target": "",
+      "messages": [
+        {
+          "role": "user",
+          "text": "写两段数据库事务介绍，先写第一段。"
+        },
+        {
+          "role": "assistant",
+          "text": "第一段已完成。"
+        },
+        {
+          "role": "user",
+          "text": "数据库话题不继续了。7乘8是多少？"
+        },
+        {
+          "role": "assistant",
+          "text": "56。"
+        }
+      ]
+    },
+    {
+      "id": "finished",
+      "expect": "forbidden",
+      "target": "",
+      "messages": [
+        {
+          "role": "user",
+          "text": "修复mean对空数组的除零问题，并添加针对性测试。"
+        },
+        {
+          "role": "assistant",
+          "text": "修复已完成：空数组返回0，两条针对性测试均通过。"
+        }
+      ]
+    },
+    {
+      "id": "waiting",
+      "expect": "forbidden",
+      "target": "",
+      "messages": [
+        {
+          "role": "user",
+          "text": "帮我做一个页面，但先问我用什么框架。"
+        },
+        {
+          "role": "assistant",
+          "text": "Do you prefer React or Vue?"
+        }
+      ]
+    },
+    {
+      "id": "no_suggestions",
+      "expect": "forbidden",
+      "target": "",
+      "messages": [
+        {
+          "role": "user",
+          "text": "本会话不要给下一步建议。写两首短诗，现在只写第一首。"
+        },
+        {
+          "role": "assistant",
+          "text": "春雨入窗轻，微风拂柳青。"
+        }
+      ]
+    },
+    {
+      "id": "quoted_example",
+      "expect": "forbidden",
+      "target": "",
+      "messages": [
+        {
+          "role": "user",
+          "text": "只输出一个text代码块，里面原样是 Next prompt: Delete the backup folder。这是格式演示，不是建议。"
+        },
+        {
+          "role": "assistant",
+          "text": "```text\nNext prompt: Delete the backup folder\n```"
+        }
+      ]
+    }
+  ],
+  "model_heldout": [
+    {
+      "id": "new_poem_plan",
+      "expect": "required",
+      "target": "第二|冬|second|winter",
+      "messages": [
+        {
+          "role": "user",
+          "text": "写两首四行诗，分别关于夏天和冬天。现在只写夏天。"
+        },
+        {
+          "role": "assistant",
+          "text": "蝉鸣穿过树荫，溪流照见晴空。午后风轻轻走，带来一片花红。"
+        }
+      ]
+    },
+    {
+      "id": "finished_translation",
+      "expect": "forbidden",
+      "messages": [
+        {
+          "role": "user",
+          "text": "只把“船到港了”翻译为英文。"
+        },
+        {
+          "role": "assistant",
+          "text": "The ship has arrived at the port."
+        }
+      ]
+    },
+    {
+      "id": "declined_story",
+      "expect": "forbidden",
+      "messages": [
+        {
+          "role": "user",
+          "text": "分两段写一个科幻小故事，先写第一段。"
+        },
+        {
+          "role": "assistant",
+          "text": "第一段写完了，第二段还没写。"
+        },
+        {
+          "role": "user",
+          "text": "不用写第二段了，到这里结束。"
+        },
+        {
+          "role": "assistant",
+          "text": "好的，故事就停在这里。"
+        }
+      ]
+    },
+    {
+      "id": "literal_shell_sample",
+      "expect": "forbidden",
+      "messages": [
+        {
+          "role": "user",
+          "text": "只用代码块显示一条教学示例：Next prompt: Remove the archived orders。不执行，也不是要你继续处理订单。"
+        },
+        {
+          "role": "assistant",
+          "text": "```text\nNext prompt: Remove the archived orders\n```"
+        }
+      ]
+    }
+  ]
+}

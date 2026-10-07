@@ -75,3 +75,26 @@ Windows clipboard executables. WSLg offers an independent clipboard bridge throu
 `wl-copy`; the adapter now tries it when WAYLAND_DISPLAY exists. Without either
 backend it reports display-only mode and does not change interoperability settings. A friend's precise historical Windows failure still
 requires that machine's error details; the new self-test detects startup failure.
+
+
+## Structured suggestions and tool isolation — 2026-10-08
+
+Local Codex 0.160.0 `exec --help` exposes `--output-schema FILE`. A real loopback
+Responses request carried `text.format.type = json_schema`; authenticated
+`gpt-5.6-luna / low` returned the requested instruction-or-null object. NextPrompt
+validates that exact envelope before its existing text/secret/length filters. The
+schema lives only in the disposable inference directory.
+
+Official source at [rust-v0.160.0](https://github.com/openai/codex/tree/rust-v0.160.0)
+was inspected, including
+[AgentsToml](https://github.com/openai/codex/blob/rust-v0.160.0/codex-rs/core/config.schema.json)
+and [tool registration](https://github.com/openai/codex/blob/rust-v0.160.0/codex-rs/core/src/tools/spec_plan.rs).
+Disabling the multi-agent feature flags alone did not remove catalog-selected V2
+agent tools. `agents.enabled=false` removes them and is now explicit in child
+requests. The existing default model is preserved.
+
+Some newer model catalogs independently expose `request_user_input_async`; the
+ordinary request-input toggle does not control it in this CLI version. Changing
+the default to such a model was therefore not shipped. The default-model captured
+request contains only the inert code-mode exec/wait wrappers, without shell, apps,
+browser, hooks or agent tools. No Codex files or catalog entries were patched.

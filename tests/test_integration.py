@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from nextprompt.config import ConfigStore
-from nextprompt.providers import CodexSuggestionProvider
+from nextprompt.providers import CodexSuggestionProvider, ProviderUnavailable
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPT = "Run the full regression suite and review the final diff."
@@ -41,6 +41,7 @@ def real_cli(tmp_path, monkeypatch):
     requests = []
     controls = {
         "fail_child": False,
+        "malformed_child": False,
         "suggestion": PROMPT,
         "reject_model": None,
         "root_reply": "Implemented the redirect fix. Targeted tests passed.",
@@ -74,6 +75,8 @@ def real_cli(tmp_path, monkeypatch):
                 self.wfile.write(error)
                 return
             text = controls["suggestion"] if child else controls["root_reply"]
+            if child and not controls["malformed_child"]:
+                text = json.dumps({"prompt": text}, ensure_ascii=False)
             response_id = f"response-{len(requests)}"
             events = [
                 {"type": "response.created", "response": {"id": response_id}},
@@ -209,12 +212,14 @@ def test_real_provider_one_short_output_no_transcript(real_cli):
     assert not list(store.root.glob("inference-*"))
     request = real_cli["requests"][0]
     assert request["model"] == "gpt-5.6-luna"
+    assert request["text"]["format"]["type"] == "json_schema"
     assert request.get("reasoning", {}).get("effort") == "low"
     # Codex 0.159+ also sends tools inside an `additional_tools` input item.
     assert tool_names(request) <= {"functions", "functions.exec", "functions.wait"}
     text = json.dumps(request["input"], ensure_ascii=False)
     assert "<environment_context>" not in text and "<permissions instructions>" not in text
-    assert len(json.dumps(request)) < 10000  # Slim request: no goals or sandbox prose.
+    # Explicit eligibility policy and a nullable output schema, without agent/tool prose.
+    assert len(json.dumps(request)) < 12000
 
 
 def test_real_provider_falls_back_after_model_rejection(real_cli):
@@ -229,6 +234,16 @@ def test_real_provider_falls_back_after_model_rejection(real_cli):
     # NextPrompt must select exactly one alternative, with no larger model.
     assert requested[-1] == "gpt-6-luna"
     assert requested[:-1] and set(requested[:-1]) == {"gpt-5.6-luna"}
+    assert not list(store.root.glob("inference-*"))
+
+
+def test_real_provider_rejects_prose_without_retrying(real_cli):
+    real_cli["controls"]["malformed_child"] = True
+    store = ConfigStore()
+    provider = CodexSuggestionProvider(store.load()["model"], store.root)
+    with pytest.raises(ProviderUnavailable, match="^unavailable$"):
+        provider.generate("USER:\nWrite a second lesson after the first one.\n")
+    assert len(real_cli["requests"]) == 1
     assert not list(store.root.glob("inference-*"))
 
 

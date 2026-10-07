@@ -71,7 +71,6 @@ def test_context_ignores_internal_runs_and_other_events(configured, monkeypatch)
     [
         ("Next prompt: Add a regression test for logout.", "Add a regression test for logout."),
         ("**Next prompt:** Add a logout test", "Add a logout test"),
-        ("> Next prompt：Add a logout test", "Add a logout test"),
         ("下一步建议：运行完整回归测试，检查最终改动。", "运行完整回归测试，检查最终改动。"),
         ("**下一步建议：** `pytest -q`", "pytest -q"),
         # Copied as written: generic or multi-sentence text is not rewritten.
@@ -349,7 +348,6 @@ def test_instructions_cover_questions_typos_and_loops():
         ("→ 顺手的话，可以「把简介压到 100 字以内」。", "把简介压到 100 字以内"),
         ("→ 「把四章合成一个 EPUB」，需要就说一声。", "把四章合成一个 EPUB"),
         ("**→ 还差最后一块：「补上第三章的结尾」**", "补上第三章的结尾"),
-        ("> → 打算投稿的话，『按投稿格式重新排版』会省事。", "按投稿格式重新排版"),
         ("→ Want me to “add a regression test for logout”?", "add a regression test for logout"),
         ('-> One loose end: "update the README for the flag".', "update the README for the flag"),
         ("→ 次は「回帰テストを追加して」はいかが？", "回帰テストを追加して"),
