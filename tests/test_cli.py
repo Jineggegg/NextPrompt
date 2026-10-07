@@ -135,6 +135,13 @@ def test_doctor_probe_succeeds_without_clipboard(tmp_path, capsys, doctor_provid
     assert doctor_provider.generate.call_count == 1
 
 
+def test_doctor_accepts_a_valid_silent_response(tmp_path, capsys, doctor_provider):
+    doctor_provider.generate.return_value = ""
+    assert main(["--data-dir", str(tmp_path), "doctor", "--probe"]) == 0
+    assert "✓ valid response (no suggestion needed)" in capsys.readouterr().out
+    assert doctor_provider.generate.call_count == 1
+
+
 def test_doctor_without_probe_does_not_run_inference(tmp_path, capsys, doctor_provider):
     assert main(["--data-dir", str(tmp_path), "doctor"]) == 0
     output = capsys.readouterr().out

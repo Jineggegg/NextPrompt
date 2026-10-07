@@ -192,11 +192,19 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
                 )
                 from .suggestion import sanitize
 
-                usable = bool(sanitize(value))
+                # A completed task correctly yields an explicit null suggestion.
+                silent = value == ""
+                usable = silent or bool(sanitize(value))
                 healthy = healthy and usable
                 rows.append(
                     "Inference probe     "
-                    + ("✓ one short suggestion" if usable else "✗ invalid response")
+                    + (
+                        "✓ valid response (no suggestion needed)"
+                        if silent
+                        else "✓ one short suggestion"
+                        if usable
+                        else "✗ invalid response"
+                    )
                 )
         except (ProviderUnavailable, OSError, subprocess.TimeoutExpired, ValueError) as exc:
             healthy = False
