@@ -125,6 +125,8 @@ META_PROMPT = re.compile(
 NOT_USER_VOICE = re.compile(
     r"[{}<>]|https?://|^#{1,6}\s|^I (?:have|will|can)\b|"
     r"^(?:here is|here's|as an ai|the next prompt is)\b|"
+    r"(?:we|i) (?:need|must|should) (?:must |to )?(?:predict|generate|output|suggest) "
+    r"(?:(?:the|a|one) )?(?:next|suggestion)\b|"
     r"^(?:我(?:会|将|已经|已|可以)|以下是|下面是|作为(?:一个)?\s*AI|"
     r"以下は|承知しました|다음은|알겠습니다)",
     re.I,

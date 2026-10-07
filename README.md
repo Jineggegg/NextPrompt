@@ -16,7 +16,7 @@ paste with **Ctrl+V** (**Cmd+V** on macOS) and keep going.
 - **Auto-copy + notification by default**: each suggestion is copied and announced with a desktop notification, so you know when to paste; Windows, WSL, macOS and common Linux desktops. Display-only mode is available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
-Version **0.2.2** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
+Version **0.2.3** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
 
 ## Installation
 
@@ -139,6 +139,10 @@ model decides whether a suggestion is worth it. The Stop Hook reads the last lin
 quoted prompt. It is an instruction to the model, not a hard guarantee. The line costs the root model
 a few output tokens. To go back to the previous behavior (no line in replies, a separate lightweight
 request), set `--source model` with `$nextprompt-setup`.
+
+Code blocks, quoted examples and fictional dialogue are not commands to copy. The
+optional separate model returns a validated instruction-or-null object; malformed
+output is skipped. Both modes follow the same unfinished-work policy.
 
 ## Commands
 

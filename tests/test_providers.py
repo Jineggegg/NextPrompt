@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import time
@@ -13,6 +14,7 @@ from nextprompt.providers import (
     choose_model,
     failure_category,
     model_candidates,
+    response_prompt,
 )
 
 
@@ -77,6 +79,9 @@ def test_inference_safety_flags(monkeypatch, settings, tmp_path):
     assert "include_permissions_instructions=false" in args
     assert "include_environment_context=false" in args
     assert provider._environment()["NEXTPROMPT_INTERNAL"] == "1"
+    assert "agents.enabled=false" in args
+    schema = json.loads(Path(args[args.index("--output-schema") + 1]).read_text())
+    assert schema["required"] == ["prompt"] and schema["additionalProperties"] is False
     assert args[-1] == "-"
 
 
@@ -171,7 +176,9 @@ def test_runtime_model_rejection_falls_back_low(monkeypatch, fallback_provider, 
         calls.append((command, kwargs))
         if len(calls) == 1:
             return subprocess.CompletedProcess(command, 1, b"", b"Model not found")
-        return subprocess.CompletedProcess(command, 0, b"Review the final diff for regressions.")
+        return subprocess.CompletedProcess(
+            command, 0, b'{"prompt":"Review the final diff for regressions."}'
+        )
 
     monkeypatch.setattr("nextprompt.providers.run_process", infer)
     assert fallback_provider.generate("USER:\nReview the change.\n") == (
@@ -264,7 +271,7 @@ def cached_provider(monkeypatch, settings, tmp_path):
         calls["infer"].append(name)
         if name in calls.get("reject", ()):
             return subprocess.CompletedProcess(command, 1, b"", b"Model not found")
-        return subprocess.CompletedProcess(command, 0, b"Review the final diff.")
+        return subprocess.CompletedProcess(command, 0, b'{"prompt":"Review the final diff."}')
 
     monkeypatch.setattr(provider, "check_cli", check_cli)
     monkeypatch.setattr(provider, "discover_models", discover_models)
@@ -318,3 +325,26 @@ def test_corrupt_cache_is_ignored(cached_provider):
     (data / "codex-cache.json").write_text("{not json")
     assert provider.generate("USER:\nA.\n") == "Review the final diff."
     assert calls["discover"] == 1
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        b"We need predict next prompt.",
+        b'{"prompt":123}',
+        b'{"prompt":"Fix it","analysis":"extra"}',
+        b"[]",
+        b"null",
+        b"{invalid",
+        b"\xff",
+        b" " * 16385,
+    ],
+)
+def test_invalid_structured_response_is_never_used(payload):
+    with pytest.raises(ProviderUnavailable, match="^unavailable$"):
+        response_prompt(payload)
+
+
+@pytest.mark.parametrize("prompt", [None, "", "Write the second chapter.", "接着写第二章。"])
+def test_structured_instruction_or_explicit_silence(prompt):
+    assert response_prompt(json.dumps({"prompt": prompt}).encode()) == (prompt or "")

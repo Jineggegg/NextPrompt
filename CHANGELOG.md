@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.3 — 2026-10-08
+
+- Ignore suggestions inside Markdown code blocks, quoted examples and indented code;
+  reject ambiguous lines containing more than one quoted instruction.
+- Distinguish quoted or labelled fictional dialogue from a real request for the user
+  to choose; cover English preference questions as well as Chinese choices.
+- Align separate-model suggestions with the same unfinished-work policy as inline
+  suggestions. Validate a structured instruction-or-null response and reject malformed
+  output and prediction commentary before copying. Preserve existing model settings.
+- Explicitly disable child agents in separate inference, including models whose
+  catalog enables newer agent tooling by default.
+- Add reproducible opt-in real-model suites for multi-turn conversations, topic and
+  difficulty changes, long writing, interruptions, quotations and user boundaries.
+- Hook command definitions are unchanged from 0.2.2.
+
 ## 0.2.2 — 2026-10-07
 
 - Add a Codex Setup action with a first-use introduction and activation checks,

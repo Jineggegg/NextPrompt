@@ -1,5 +1,73 @@
 # Validation
 
+## v0.2.3 — 2026-10-08, realistic scenario regression
+
+- Real Codex CLI **0.160.0**, isolated homes, existing authentication linked without
+  reading/copying credentials. Only synthetic conversations were supplied. The actual
+  SessionStart, UserPromptSubmit and Stop paths ran; test receivers recorded clipboard
+  and notification calls. No suggestion was executed.
+- Baseline: **45/48** multi-turn cases passed. Two quoted/code examples were copied as
+  commands; one real follow-up was displayed but not copied because fictional dialogue
+  was mistaken for a question to the user. The original **517-test** suite had passed.
+- After the fixes, **108/108** final evaluated cases matched their declared expectations:
+
+  | Path / model | Cases | Due suggestions | No-suggestion cases | Failures |
+  | --- | ---: | ---: | ---: | ---: |
+  | Inline, gpt-6-astra / xhigh, main sessions | 48 | 17 | 31 | 0 |
+  | Inline, gpt-6-astra / xhigh, independent cases | 7 | 3 | 4 | 0 |
+  | Inline, gpt-6-astra / xhigh, harder/longer work | 8 | 4 | 4 | 0 |
+  | Inline, gpt-6-luna / high, independent cases repeated twice | 14 | 6 | 8 | 0 |
+  | Separate model, gpt-5.6-luna / low, 9 cases repeated three times | 27 | 9 | 18 | 0 |
+  | Separate model, additional independent cases | 4 | 1 | 3 | 0 |
+
+- Coverage: explicit and implicit topic changes, easy-to-hard and hard-to-easy changes,
+  planned parts, side questions, diagnosis-before-fix, read-only/approval boundaries,
+  missing information, pauses, cancellations, persistent opt-out, Simplified and
+  Traditional Chinese, English and Japanese, quoted instructions, dialogue and Markdown.
+  Stress work included a distributed-payment failure analysis with an idempotency
+  protocol/test matrix, non-diagonalizable matrix exponential reasoning, and a 4,875-character
+  story reply followed by a pause. Main-model turn latency ranged into minutes for the
+  long reply; inline mode added no separate suggestion inference.
+- A gpt-6-luna independent case initially exposed **unquoted speaker-labelled dialogue**
+  blocking a valid copy (6/7 passed). That case became a regression case; both subsequent
+  seven-case runs passed. All **77** final inline replies were also replayed through the
+  latest Stop implementation: **77/77**, with exactly the expected copied text and no
+  provider fallback.
+- Separate-mode tuning exposed opt-out/example false positives, occasional missing
+  suggestions, mixed-language text and prediction commentary. A prompt-only revision
+  did not reliably fix output shape. The final version requests and validates an
+  instruction-or-null JSON object before the existing text filters. All **31** final
+  separate-mode cases passed, including **10/10** required suggestions and **21/21**
+  correct silences; failures from earlier revisions were not counted as passes.
+- Existing default model/settings are retained. A trial default-model change was rejected
+  when request capture exposed unwanted tools. Explicit `agents.enabled=false` now also
+  prevents catalog-selected agent tools in child inference. See [interface evidence](RESEARCH.md).
+- Local full regression: **555 passed, 35 skipped**, followed by the additional malformed
+  response integration case passing (**556 passed cases total**). Skips require another
+  OS; opt-in real-CLI cases were enabled. Ruff lint/format passed. First-install welcome,
+  setup metadata, Windows discovery and hook tests remain in the suite.
+- [Machine-readable results](benchmarks/regression-2026-10-08.json) and
+  [predeclared scenarios](benchmarks/scenarios.json) are committed. Full synthetic replies
+  remain local rather than publishing captured model contexts.
+
+Reproduce the opt-in model evaluation on POSIX with an authenticated Codex CLI:
+
+```sh
+python scripts/evaluate_scenarios.py --model gpt-6-astra --effort xhigh --output /path/to/results/main
+python scripts/evaluate_scenarios.py --model gpt-6-astra --effort xhigh --split stress --output /path/to/results/stress
+python scripts/evaluate_scenarios.py --model gpt-6-luna --effort high --split heldout --repeat 2 --output /path/to/results/heldout
+python scripts/evaluate_model_mode.py --repeat 3 --output /path/to/results/model
+python scripts/evaluate_model_mode.py --split model_heldout --output /path/to/results/model-heldout
+```
+
+Limits: this is a finite synthetic sample, not a guarantee for every user, model or
+conversation. A regex target is only an initial flag; generated suggestions were also
+reviewed for relevance and language. Hooks were trusted only within isolated test runs;
+the harness does not grant trust in the user's installation. These scenarios verify calls
+into clipboard/notification adapters, not desktop rendering or the friend's Windows
+machine. Real Windows/macOS installer coverage comes from the CI matrix; the earlier WSLg
+clipboard round trip remains separate evidence.
+
 ## Unreleased — 2026-10-04, suggestions only when useful, varied wording
 
 - Method: replay simulation through `codex exec` with the real `gpt-6-luna`. Every reply
