@@ -249,7 +249,7 @@ class CodexSuggestionProvider(SuggestionProvider):
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise ProviderUnavailable("timeout")
-            return remaining
+            return min(timeout, remaining)
 
         result = run_process(
             [self.executable(), "exec", "--help"], timeout=budget(), env=self._environment()
@@ -350,13 +350,15 @@ class CodexSuggestionProvider(SuggestionProvider):
         self.selection = None
         if len(context) > 8000:
             raise ProviderUnavailable("unavailable")
-        deadline = time.monotonic() + self.settings["timeout_seconds"]
+        limit = self.settings["timeout_seconds"]
+        deadline = time.monotonic() + limit
 
         def budget() -> float:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise ProviderUnavailable("timeout")
-            return remaining
+            # Coarse clocks can round (start + limit) - start slightly above limit.
+            return min(limit, remaining)
 
         self.data_root.mkdir(parents=True, exist_ok=True, mode=0o700)
         try:

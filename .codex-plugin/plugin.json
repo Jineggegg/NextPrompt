@@ -1,6 +1,6 @@
 {
   "name": "nextprompt",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Codex Next Prompt: generates your next prompt from the conversation context and copies it to your clipboard.",
   "skills": "./skills",
   "hooks": "./hooks/hooks.json",

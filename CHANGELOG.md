@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.4 — 2026-10-08
+
+- Doctor now accepts a valid no-suggestion response to its completed-task probe.
+  Correct silence no longer reports a failed installation or model response.
+  Invalid responses and authentication failures still fail the check.
+- Clamp deadline calculations to their configured limit when coarse clocks round
+  upward, preserving the 15-second inference cap on Windows Python 3.9.
+
 ## 0.2.3 — 2026-10-08
 
 - Ignore suggestions inside Markdown code blocks, quoted examples and indented code;
