@@ -8,8 +8,11 @@ but Doctor reported it as an invalid response. The probe now accepts validated s
 authentication errors and malformed/non-useful responses still fail.
 
 - The 24 CLI tests pass, including the new valid-silence case and existing invalid-output
-  and authentication-error cases. The final full local suite passes **557 tests**, with
+  and authentication-error cases. The final full local suite passes **558 tests**, with
   **35 platform-specific skips**, with opt-in CLI integration enabled. Ruff checks pass.
+- Windows Python 3.9 exposed a floating-point deadline rounding to
+  `15.000000000000028` seconds. A deterministic regression reproduces this; deadline
+  budgets are now capped at their configured limit without relaxing the assertion.
 - An authenticated probe on the actual Codex 0.160.0 / gpt-5.6-luna low returned valid
   silence and Doctor exited successfully. All three actual shell hook self-tests passed;
   WSLg `wl-copy` was detected. This probe does not copy text or show a notification.

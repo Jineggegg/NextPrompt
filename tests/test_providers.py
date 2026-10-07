@@ -345,6 +345,19 @@ def test_invalid_structured_response_is_never_used(payload):
         response_prompt(payload)
 
 
+def test_shared_timeout_never_rounds_above_its_limit(monkeypatch, fallback_provider):
+    monkeypatch.setattr("nextprompt.providers.time.monotonic", lambda: 254.99999999999997)
+    budgets = []
+
+    def infer(command, **kwargs):
+        budgets.append(kwargs["timeout"])
+        return subprocess.CompletedProcess(command, 0, b'{"prompt":null}')
+
+    monkeypatch.setattr("nextprompt.providers.run_process", infer)
+    assert fallback_provider.generate("USER:\nThe task is complete.\n") == ""
+    assert budgets and all(0 < budget <= 15 for budget in budgets)
+
+
 @pytest.mark.parametrize("prompt", [None, "", "Write the second chapter.", "接着写第二章。"])
 def test_structured_instruction_or_explicit_silence(prompt):
     assert response_prompt(json.dumps({"prompt": prompt}).encode()) == (prompt or "")
