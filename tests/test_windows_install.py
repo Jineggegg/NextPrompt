@@ -24,7 +24,7 @@ function Get-Command {
     switch ($Name) {
         'python' {
             if ($global:case.python -eq 'missing' -and -not $global:installed) { return $null }
-            if ($global:case.python -eq 'still-missing') { return $null }
+            if ($global:case.python -in @('still-missing', 'off-path')) { return $null }
             return [PSCustomObject]@{ Source = 'Fake-Python' }
         }
         'winget' {
@@ -43,6 +43,9 @@ function Get-Command {
         { $_ -like '*\OpenAI\Codex\bin\*\codex.exe' } {
             $global:calls.Add(@{ command = 'codex-app'; arguments = @($Name) })
             return [PSCustomObject]@{ Source = 'Fake-Codex' }
+        }
+        { $_ -like '*\Programs\Python\Python312\python.exe' } {
+            return [PSCustomObject]@{ Source = 'Fake-Python' }
         }
         default { throw 'Unexpected command lookup in installer' }
     }
@@ -318,6 +321,10 @@ def run_installer(**overrides):
         env.update(NEXTPROMPT_TEST_PYTHON=sys.executable, NEXTPROMPT_TEST_DATA=data_dir)
         # A stand-in for the Codex app's own codex.exe; never the real one on this machine.
         env["LOCALAPPDATA"] = str(Path(data_dir) / "localappdata")
+        if case["python"] == "off-path":
+            python = Path(env["LOCALAPPDATA"], "Programs", "Python", "Python312", "python.exe")
+            python.parent.mkdir(parents=True)
+            python.write_bytes(b"")
         if case["codex"] == "app":
             app_codex = Path(env["LOCALAPPDATA"], "OpenAI", "Codex", "bin", "0123abcd", "codex.exe")
             app_codex.parent.mkdir(parents=True)
@@ -336,3 +343,9 @@ def run_installer(**overrides):
         config_path = Path(data_dir) / "config.json"
         parsed["config"] = json.loads(config_path.read_text()) if config_path.exists() else None
         return parsed
+
+
+def test_installer_reuses_python_outside_path():
+    result = run_installer(python="off-path", auto_copy="on", notify="on")
+    assert result["success"]
+    assert not any(c["command"] == "winget" for c in result["calls"])

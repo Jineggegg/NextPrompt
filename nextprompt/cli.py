@@ -17,6 +17,7 @@ from typing import Any
 from . import stats
 from .clipboard import SystemClipboardAdapter
 from .config import DEFAULTS, ConfigError, ConfigStore
+from .diagnostics import check_hooks
 from .hook import generate_suggestion
 from .i18n import LANGUAGES
 from .platform import detect_platform
@@ -152,55 +153,76 @@ def doctor(store: ConfigStore, probe: bool = False) -> DoctorReport:
         f"Hooks               {'✓' if valid else '✗'} {', '.join(HOOK_EVENTS)} (trust in /hooks)",
         "Re-entry protection ✓ hooks/plugins disabled + NEXTPROMPT_INTERNAL",
     ]
-    provider = CodexSuggestionProvider(cfg["model"], store.root)
-    provider.clear_cache()  # Doctor re-verifies everything; the next turn starts fresh.
-    try:
-        rows.append("Codex CLI           ✓ " + provider.check_cli().replace("codex-cli ", ""))
-        auth = run_process([provider.executable(), "login", "status"], timeout=3)
-        healthy = healthy and auth.returncode == 0
-        text = (auth.stdout + auth.stderr).decode("utf-8", "replace").casefold()
-        source = (
-            "ChatGPT" if "chatgpt" in text else "API key" if "api key" in text else "configured"
-        )
-        rows.append(
-            f"Authentication      {'✓' if auth.returncode == 0 else '✗'} "
-            f"{source} (status only; token validity unverified)"
-        )
-        with tempfile.TemporaryDirectory(prefix="nextprompt-doctor-") as name:
-            selection = choose_model(
-                provider.discover_models(Path(name)),
-                cfg["model"]["name"],
-                cfg["model"]["reasoning"],
+    launch_ok = valid and check_hooks(root)
+    healthy = healthy and launch_ok
+    rows.append(f"Hook self-test      {'✓' if launch_ok else '✗'} real shell, synthetic events")
+    if not launch_ok:
+        rows.append("Action              Run $nextprompt-onboarding to repair the hook runtime.")
+    rows.append("Hook trust          — review all three hooks in Codex; self-test is not trust")
+    if not cfg["enabled"] or cfg["trigger_mode"] != "every_turn":
+        rows.append("Automatic prompts   — disabled or manual; use $nextprompt-enable / setup")
+    if cfg["source"] == "inline" and not probe:
+        rows.append("Suggestion source   ✓ inline (no separate CLI login or model request needed)")
+    else:
+        provider = CodexSuggestionProvider(cfg["model"], store.root)
+        provider.clear_cache()  # Doctor re-verifies everything; the next turn starts fresh.
+        try:
+            rows.append("Codex CLI           ✓ " + provider.check_cli().replace("codex-cli ", ""))
+            auth = run_process([provider.executable(), "login", "status"], timeout=3)
+            healthy = healthy and auth.returncode == 0
+            text = (auth.stdout + auth.stderr).decode("utf-8", "replace").casefold()
+            source = (
+                "ChatGPT" if "chatgpt" in text else "API key" if "api key" in text else "configured"
             )
-        rows.append(f"Suggestion model    ✓ {selection.name} / {selection.reasoning} (catalog)")
-        if probe:
-            value = provider.generate(
-                "USER:\nFix the login redirect.\n"
-                "ASSISTANT:\nImplemented the fix. Targeted tests pass.\n"
-            )
-            from .suggestion import sanitize
-
-            usable = bool(sanitize(value))
-            healthy = healthy and usable
             rows.append(
-                "Inference probe     "
-                + ("✓ one short suggestion" if usable else "✗ invalid response")
+                f"Authentication      {'✓' if auth.returncode == 0 else '✗'} "
+                f"{source} (status only; token validity unverified)"
             )
-    except (ProviderUnavailable, OSError, subprocess.TimeoutExpired, ValueError) as exc:
-        healthy = False
-        category = str(exc) if isinstance(exc, ProviderUnavailable) else "unavailable"
-        category = category if category in ("authentication", "quota", "timeout") else "unavailable"
-        label = "Inference probe" if probe else "Suggestion model"
-        rows.append(f"{label:<20}✗ {category}")
-        if category == "authentication":
-            rows.append("Action              Run codex login on this machine, then retry --probe.")
+            with tempfile.TemporaryDirectory(prefix="nextprompt-doctor-") as name:
+                selection = choose_model(
+                    provider.discover_models(Path(name)),
+                    cfg["model"]["name"],
+                    cfg["model"]["reasoning"],
+                )
+            rows.append(f"Suggestion model    ✓ {selection.name} / {selection.reasoning} (catalog)")
+            if probe:
+                value = provider.generate(
+                    "USER:\nFix the login redirect.\n"
+                    "ASSISTANT:\nImplemented the fix. Targeted tests pass.\n"
+                )
+                from .suggestion import sanitize
+
+                usable = bool(sanitize(value))
+                healthy = healthy and usable
+                rows.append(
+                    "Inference probe     "
+                    + ("✓ one short suggestion" if usable else "✗ invalid response")
+                )
+        except (ProviderUnavailable, OSError, subprocess.TimeoutExpired, ValueError) as exc:
+            healthy = False
+            category = str(exc) if isinstance(exc, ProviderUnavailable) else "unavailable"
+            category = (
+                category if category in ("authentication", "quota", "timeout") else "unavailable"
+            )
+            label = "Inference probe" if probe else "Suggestion model"
+            rows.append(f"{label:<20}✗ {category}")
+            if category == "authentication":
+                rows.append(
+                    "Action              Run codex login on this machine, then retry --probe."
+                )
     clipboard = SystemClipboardAdapter(osc52_fallback=cfg["clipboard"]["osc52_fallback"])
     rows.append(
         f"Clipboard backend   {'✓' if clipboard.available() else '—'} "
         + clipboard.backend_name()
         + " (detection only)"
     )
-    rows.append("Platform            ✓ " + detect_platform().label)
+    platform = detect_platform()
+    rows.append("Platform            ✓ " + platform.label)
+    if platform.name == "wsl" and not clipboard.available():
+        rows.append(
+            "Action              WSL has no clipboard backend. For WSLg install wl-clipboard; "
+            "otherwise use Windows-hosted hooks. Suggestions can still display."
+        )
     return DoctorReport("\n".join(rows), healthy)
 
 

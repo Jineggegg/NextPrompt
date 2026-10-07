@@ -13,9 +13,12 @@ If those are older than Python 3.9, use the newest `python3.X` command available
 
 The CLI uses `PLUGIN_DATA` or the official data path for marketplace
 `nextprompt`. For a different marketplace supply its official `--data-dir`
-before the command. This checks login status and model discovery without reading
-credential files or conversation content. A login status check does not validate
-the token or prove entitlement. A catalog entry does not prove inference access.
+before the command. This executes all three shipped hook commands with synthetic input and isolated data,
+without writing the clipboard or sending notifications. A successful self-test does
+not prove that Codex has trusted or loaded the hooks. Default inline mode needs no
+separate CLI login or model discovery; those checks apply to source=model or --probe.
+A login status check does not validate the token or prove entitlement. A catalog entry
+does not prove inference access.
 
 If the user requests a real inference test, add `--probe`. This uses only a
 synthetic example and may consume account quota. Never show raw CLI errors,

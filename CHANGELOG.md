@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.2 — 2026-10-07
+
+- Add a Codex Setup action with a first-use introduction and activation checks,
+  independent of hooks; also show the one-time welcome after installation mid-chat.
+- Use system PowerShell and shared Python discovery on Windows, including default
+  install folders before PATH, avoiding stale PATH and Store alias failures.
+- Run real hook commands in Doctor with isolated synthetic input. Inline mode no
+  longer blocks installation on an unnecessary separate login or model lookup.
+- Support WSLg clipboard copy when Windows executable interoperability is disabled.
+- Report missing Python and WSL clipboard limitations with recovery steps; do not
+  claim a loaded hook proves all hooks are trusted or clipboard copy works.
+
 ## 0.2.1 — 2026-10-05
 
 - Windows: hooks no longer fail when Python is off the PATH Codex started with (for example

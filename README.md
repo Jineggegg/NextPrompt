@@ -16,12 +16,24 @@ paste with **Ctrl+V** (**Cmd+V** on macOS) and keep going.
 - **Auto-copy + notification by default**: each suggestion is copied and announced with a desktop notification, so you know when to paste; Windows, WSL, macOS and common Linux desktops. Display-only mode is available.
 - **You stay in control**: suggestions are never automatically sent or executed.
 
-Version **0.2.1** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
+Version **0.2.2** · Python **3.9+** · Codex CLI **0.159+** · **MIT**
 
 ## Installation
 
-The Codex app and Codex CLI share the same `~/.codex`, so a plugin installed either way works
-in both.
+The Codex app and Codex CLI share an installation only when they use the same `CODEX_HOME`
+on the same host. Windows and WSL may use different Python installations, settings and clipboards.
+
+### First-time setup
+
+After installing from GitHub in Codex, run the plugin's **Setup** action (or type
+`$nextprompt-onboarding`). It introduces the plugin, checks the real hook commands and
+explains any remaining activation step, even if the hooks cannot start yet.
+Installing from GitHub alone does **not** install Python or trust hooks.
+
+On Windows, the hooks use the system PowerShell and look for Python in its default
+installation folders before PATH. This avoids stale app PATHs and the Microsoft Store
+Python aliases. The installer uses the same discovery logic. Missing Python produces
+an actionable NextPrompt message instead of an unexplained hook failure.
 
 ### Install with Codex (easiest, works in the Codex app)
 
@@ -39,7 +51,7 @@ macOS / Linux:
 d="$HOME/codex-next-prompt"; if [ -d "$d" ]; then git -C "$d" pull --ff-only; else git clone https://github.com/Jineggegg/codex-next-prompt.git "$d"; fi && sh "$d/scripts/install.sh" --auto-copy on --notify on
 
 If git is missing, tell me to install Git and stop. If the command fails, show me its last lines and stop.
-When it succeeds, tell me the two remaining steps: fully quit and reopen Codex, then open /hooks and trust the NextPrompt SessionStart, UserPromptSubmit and Stop hooks.
+When it succeeds, introduce how suggestions and clipboard copy work. Tell me the remaining activation steps: fully quit and reopen Codex, then review and trust the NextPrompt SessionStart, UserPromptSubmit and Stop hooks in Codex Hook settings (CLI: /hooks). Installation success alone does not prove the hooks are active.
 ````
 
 Python is installed automatically when missing. Trusting the hooks stays your own step.
@@ -86,9 +98,9 @@ After installation:
 
 1. Quit and reopen Codex.
 2. Open `/hooks`, review and trust the NextPrompt SessionStart, UserPromptSubmit and Stop Hooks.
-3. On the first trusted session start, a one-time usage report appears; complete a normal turn, then review, paste and send the suggestion yourself.
+3. On the first trusted session start or user message, a one-time usage report appears. Try “Write a two-part outline; write only part one for now.” A follow-up for part two is expected; review, paste and send it yourself. Finished tasks normally produce no suggestion.
 
-No separate setup is required. Use `$nextprompt-setup` to change preferences.
+The installer saves preferences. The plugin Setup action explains activation; `$nextprompt-setup` changes preferences.
 
 Manual installation:
 
@@ -97,8 +109,8 @@ codex plugin marketplace add .
 codex plugin add nextprompt@nextprompt
 ```
 
-Codex's own install commands print no instructions; the usage report appears at the first session
-after you restart and trust the Hook. Manual installation also copies and notifies by default; turn
+Codex's terminal install commands may not print instructions. Run `$nextprompt-onboarding`
+for an introduction and activation check, then restart and review Hook trust. Manual installation also copies and notifies by default; turn
 either off with `$nextprompt-setup`.
 
 ## What you see
@@ -132,11 +144,27 @@ request), set `--source model` with `$nextprompt-setup`.
 
 | Command | Purpose |
 | --- | --- |
+| `$nextprompt-onboarding` | First-use introduction and activation check |
 | `$nextprompt` | Generate a suggestion |
 | `$nextprompt-setup` | Configure clipboard, notifications, model and language |
 | `$nextprompt-status` | Show status and local usage counts |
 | `$nextprompt-enable` / `$nextprompt-disable` | Enable / Disable |
 | `$nextprompt-doctor` | Check installation and connection |
+
+### If nothing happens
+
+Run `$nextprompt-doctor`. It runs all three shipped commands with synthetic input,
+without copying anything, showing notifications, or requesting a model. A passing
+self-test verifies startup, context injection and Stop handling, **not** hook trust.
+Default inline suggestions do not need a separate Codex CLI login or model catalog;
+those checks are only required by `--source model` or an explicit `doctor --probe`.
+
+If Hook settings say **needs review**, review and trust the current definitions.
+If a hook **fails**, use the onboarding action to repair Python discovery. Fully
+restart Codex after installation. On WSLg, install `wl-clipboard` to copy through the Linux display when Windows
+program interoperability is disabled. Without either bridge, suggestions display
+only; use hooks on the Windows host for native Windows notifications.
+The plugin never changes WSL interoperability or hook trust for you.
 
 ## Privacy
 

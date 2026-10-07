@@ -179,7 +179,7 @@ def test_context_entrypoint_shows_onboarding_once_and_keeps_inline_context(tmp_p
     start = run_context(tmp_path, START)
     assert start.returncode == 0
     first = json.loads(start.stdout)
-    assert "NextPrompt 安装完成" in first["systemMessage"]
+    assert "NextPrompt 已加载" in first["systemMessage"]
     assert "自动复制到剪贴板 / auto-copy 开 / on" in first["systemMessage"]
     assert "桌面通知 / desktop notification 开 / on" in first["systemMessage"]
     assert "$nextprompt-setup" in first["systemMessage"]
@@ -199,7 +199,7 @@ def test_context_entrypoint_shows_onboarding_once_and_keeps_inline_context(tmp_p
 def test_context_entrypoint_silent_in_model_mode(tmp_path):
     ConfigStore(tmp_path).update(lambda cfg: cfg.update(source="model"))
     result = run_context(tmp_path, START)
-    assert "NextPrompt 安装完成" in json.loads(result.stdout)["systemMessage"]
+    assert "NextPrompt 已加载" in json.loads(result.stdout)["systemMessage"]
     assert "hookSpecificOutput" not in json.loads(result.stdout)
     result = run_context(tmp_path, {**START, "source": "resume"})
     assert result.returncode == 0 and result.stdout == b""
@@ -678,3 +678,11 @@ def test_written_content_earlier_in_the_reply_does_not_block_the_copy(configured
     payload = {**PAYLOAD, "last_assistant_message": last}
     handle_stop(payload, store=configured, provider=Mock(), clipboard=clipboard)
     clipboard.copy.assert_called_once_with("Continue with the API migration guide")
+
+
+def test_onboarding_when_installed_mid_chat(tmp_path):
+    first = json.loads(run_context(tmp_path, PROMPT).stdout)
+    assert "NextPrompt 已加载" in first["systemMessage"]
+    assert first["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
+    assert first["hookSpecificOutput"]["additionalContext"].startswith(INLINE_REMINDER)
+    assert run_context(tmp_path, PROMPT).stdout.decode("utf-8").startswith(INLINE_REMINDER)

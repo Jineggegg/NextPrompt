@@ -3,7 +3,7 @@
 NextPrompt adds lightweight AI-generated next-step suggestions to Codex after each completed turn.
 It is published as **Codex Next Prompt** (repository `Jineggegg/codex-next-prompt`);
 `nextprompt` is the package, plugin and marketplace name.
-Version: **0.2.1**. Runtime: Python 3.9+, standard library only.
+Version: **0.2.2**. Runtime: Python 3.9+, standard library only.
 
 **Your next instruction, ready to paste.** Opt into automatic clipboard copy during installation,
 then paste, review and send. Most of our 15 measured synthetic turns took **3–5 seconds**

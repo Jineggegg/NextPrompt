@@ -51,3 +51,27 @@ the shipped plugin therefore uses the working official legacy format.
 
 NextPrompt does not inspect credential file contents, invent unsupported flags,
 call an author-funded service, fork Codex, patch its TUI or emit a continuation.
+
+## Activation and onboarding — 2026-10-07
+
+Official [plugin packaging](https://developers.openai.com/plugins/build/plugins)
+documents `extensions.com.openai.onboardingSkill`, including inside the legacy
+`.codex-plugin/plugin.json`. Setup invokes the packaged skill independently of hooks.
+The legacy layout is retained for Codex 0.159 compatibility.
+
+Official [Hooks](https://learn.chatgpt.com/docs/hooks) requires review of the exact
+hook definition. Installing or enabling a plugin does not grant trust; updated hook
+commands need review again. NextPrompt does not write trust hashes.
+
+Confirmed gaps in 0.2.1: the Windows installer discovered Python only on PATH while
+hooks had additional install-folder fallbacks; Doctor checked bundle shape without
+running commands and could reject inline-only installation on unrelated model/login
+failures; welcome output required SessionStart, so installation into an existing
+chat could miss it. The new installer and Windows hook share Python discovery, and
+Doctor exercises SessionStart, UserPromptSubmit and Stop using disposable data.
+
+A WSL runtime with `interop.enabled=false` and `appendWindowsPath=false` cannot run
+Windows clipboard executables. WSLg offers an independent clipboard bridge through
+`wl-copy`; the adapter now tries it when WAYLAND_DISPLAY exists. Without either
+backend it reports display-only mode and does not change interoperability settings. A friend's precise historical Windows failure still
+requires that machine's error details; the new self-test detects startup failure.

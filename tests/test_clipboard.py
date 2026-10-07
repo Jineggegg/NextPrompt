@@ -90,3 +90,29 @@ def test_osc52_off_and_unsupported_terminal(monkeypatch):
     monkeypatch.setenv("TERM", "dumb")
     assert not SystemClipboardAdapter(PlatformInfo("headless", "headless"), True).available()
     assert not SystemClipboardAdapter(PlatformInfo("headless", "headless")).available()
+
+
+def test_wslg_clipboard_without_windows_interop(monkeypatch):
+    monkeypatch.setenv("WAYLAND_DISPLAY", "wayland-0")
+    monkeypatch.setattr(
+        "nextprompt.clipboard.shutil.which", lambda x: x if x == "wl-copy" else None
+    )
+    calls = []
+
+    def copy(args, **kwargs):
+        calls.append((args, kwargs["input_data"]))
+        return subprocess.CompletedProcess(args, 0, b"", b"")
+
+    monkeypatch.setattr("nextprompt.clipboard.run_process", copy)
+    adapter = SystemClipboardAdapter(PlatformInfo("wsl", "WSLg"))
+    assert adapter.copy("接着写第二部分 🚀")
+    assert calls == [(["wl-copy"], "接着写第二部分 🚀".encode())]
+
+
+def test_headless_wsl_does_not_use_linux_display_tools(monkeypatch):
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
+    monkeypatch.delenv("DISPLAY", raising=False)
+    monkeypatch.setattr(
+        "nextprompt.clipboard.shutil.which", lambda x: x if x == "wl-copy" else None
+    )
+    assert not SystemClipboardAdapter(PlatformInfo("wsl", "WSL")).available()
