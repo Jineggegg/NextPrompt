@@ -13,6 +13,7 @@ from nextprompt.hook import (
     INLINE_REMINDER,
     STYLE_HINTS,
     WELCOME_MARKER,
+    asks_user,
     handle_context,
     handle_stop,
     inline_reminder,
@@ -112,6 +113,92 @@ def test_unsafe_line_never_copies_a_different_prompt(configured, provider, clipb
 def test_only_the_end_of_the_reply_counts():
     text = "Next prompt: Add a regression test for logout.\n" + "\n".join(["more"] * 5)
     assert inline_suggestion(text) is None
+
+
+MEMORY_FOOTER = """
+<oai-mem-citation>
+<citation_entries>
+MEMORY.md:1-1|note=[synthetic test]
+</citation_entries>
+<rollout_ids>
+</rollout_ids>
+</oai-mem-citation>
+"""
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+@pytest.mark.parametrize(
+    "last, expected",
+    [
+        (
+            "第一节已写好，第二节还没写。\n\n→ 还差一步，「接着写第二节」就齐了。",
+            "接着写第二节",
+        ),
+        (
+            "Found the export failure; the fix is still pending.\n\n"
+            "→ One loose end: “fix the export failure”.",
+            "fix the export failure",
+        ),
+        (
+            "术语已解释，之前的导出修复还没完成。\n\n→ 可以接着「完成导出修复」。",
+            "完成导出修复",
+        ),
+    ],
+)
+def test_hidden_memory_footer_preserves_visible_suggestion(
+    configured, clipboard, notifications, provider, newline, last, expected
+):
+    configured.update(lambda cfg: cfg["clipboard"].update(auto_copy=True))
+    last = (last + MEMORY_FOOTER + " \t\n").replace("\n", newline)
+    assert inline_suggestion(last) == expected
+    text = handle_stop(
+        {**PAYLOAD, "last_assistant_message": last},
+        store=configured,
+        provider=provider,
+        clipboard=clipboard,
+    )
+    clipboard.copy.assert_called_once_with(go_ahead(expected))
+    provider.generate.assert_not_called()
+    notifications.assert_called_once()
+    assert text in ("✓ 已复制到剪贴板", "✓ Copied to clipboard")
+
+
+@pytest.mark.parametrize("suggestion", ["", "\n\n→ 要不要「执行下一步」？"])
+@pytest.mark.parametrize("body", ["请确认是否执行下一步。", "Which branch should I target?"])
+def test_hidden_memory_footer_keeps_confirmation_guard(
+    configured, clipboard, provider, suggestion, body
+):
+    configured.update(lambda cfg: cfg["clipboard"].update(auto_copy=True))
+    last = body + suggestion + MEMORY_FOOTER
+    assert asks_user(last)
+    assert (
+        handle_stop(
+            {**PAYLOAD, "last_assistant_message": last},
+            store=configured,
+            provider=provider,
+            clipboard=clipboard,
+        )
+        is None
+    )
+    provider.generate.assert_not_called()
+    clipboard.copy.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "suffix",
+    [
+        "\n正文还没有结束。",
+        MEMORY_FOOTER + "正文还没有结束。",
+        "\n```xml" + MEMORY_FOOTER + "\n```",
+        "\n```xml" + MEMORY_FOOTER,
+        "\n" + "\n".join("> " + line for line in MEMORY_FOOTER.splitlines()),
+        "\n" + "\n".join("    " + line for line in MEMORY_FOOTER.splitlines()),
+        MEMORY_FOOTER.replace("</oai-mem-citation>", ""),
+    ],
+)
+def test_visible_or_incomplete_footer_does_not_move_a_suggestion_to_the_end(suffix):
+    last = "第一节已写好。\n\n→ 还差一步，「接着写第二节」就齐了。" + suffix
+    assert inline_suggestion(last) is None
 
 
 def test_inline_stop_copies_the_quoted_prompt_as_a_go_ahead(configured, clipboard, notifications):
