@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Recognize closing suggestions and pending confirmation questions before Codex's
+  hidden trailing memory citations. Visible text, code examples, quotations and
+  incomplete citation blocks still count as reply boundaries.
+
 ## 0.2.4 — 2026-10-08
 
 - Doctor now accepts a valid no-suggestion response to its completed-task probe.

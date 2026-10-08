@@ -267,6 +267,13 @@ def _split_suggestion(line: str) -> tuple[str, str | None]:
 
 def _reply_lines(reply: str) -> list[str | None]:
     """Nonblank lines, with Markdown code/quotes retained as non-copyable boundaries."""
+    # Codex appends this hidden metadata after the visible reply. It must not hide
+    # either the closing suggestion or a question waiting for the user's answer.
+    reply = re.sub(
+        r"(?ms)^<oai-mem-citation>\r?\n.*?^</oai-mem-citation>[ \t]*(?:\r?\n[ \t]*)*\Z",
+        "",
+        reply,
+    )
     lines: list[str | None] = []
     fence = ""
     quoted_block = False
